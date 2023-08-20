@@ -25,7 +25,9 @@ jobs:
         pipenv install
 
     - name: Run Type Checking with mypy
-      run: mypy ./src/app
+      working-directory: ./src/app
+      run: pipenv run mypy .
+
   
   build-and-push:
     needs: check-types
