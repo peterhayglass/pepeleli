@@ -2,7 +2,7 @@
   {
     "name": "pepeleli-main",
     "image": "${container_image}",
-    "memory": 400,
+    "memory": 200,
     "cpu": 1024,
     "essential": true,
     "logConfiguration": {
