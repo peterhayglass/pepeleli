@@ -1,5 +1,5 @@
-from email.message import Message
 import discord
+from discord import Message
 from discord.ext import commands
 import boto3
 
@@ -12,7 +12,7 @@ _intents.messages = True
 bot = commands.Bot(command_prefix='?', intents=_intents, description=DESCRIPTION)
 
 @bot.event
-async def on_message(message: Message):
+async def on_message(message: Message) -> None:
     if message.author == bot.user:
         return
     if bot.user in message.mentions:

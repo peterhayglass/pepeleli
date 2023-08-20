@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 "discord.py" = "*"
 boto3 = "*"
+mypy = "*"
+boto3-stubs = {extras = ["ssm"], version = "*"}
 
 [dev-packages]
 

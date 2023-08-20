@@ -6,7 +6,28 @@ on:
       - main
 
 jobs:
+  check-types:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install pipenv and dependencies
+      run: |
+        pip install pipenv
+        pipenv install
+
+    - name: Run Type Checking with mypy
+      run: mypy ./src/app
+  
   build-and-push:
+    needs: check-types
     runs-on: ubuntu-latest
     env:
       AWS_DEFAULT_REGION: us-west-2
