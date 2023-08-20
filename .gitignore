@@ -1,0 +1,5 @@
+.vscode
+.terraform
+.terraform.*
+*.tfstate
+*.tfstate.backup
