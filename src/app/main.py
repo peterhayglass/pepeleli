@@ -16,7 +16,10 @@ async def on_message(message: Message):
     if message.author == bot.user:
         return
     if bot.user in message.mentions:
-        await message.channel.send("Hi")
+        if "open the pod bay doors" in message.content.lower():
+            await message.channel.send(f"I'm afraid I can't do that, {message.author}.  Like, I literally don't know how")
+        else:
+            await message.channel.send("Hi")
     await bot.process_commands(message)
 
 ssm_client = boto3.client('ssm', region_name=REGION)

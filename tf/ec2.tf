@@ -1,5 +1,5 @@
 data "template_file" "user_data" {
-  template = file("user-data.tpl")
+  template = file("user-data.sh")
 
   vars = {
     ecs_cluster_name = aws_ecs_cluster.main.name
