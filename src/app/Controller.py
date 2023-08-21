@@ -1,24 +1,29 @@
 import discord
+from discord import Message
 from discord.ext import commands
-from IConfigManager import IConfigManager
-from IEventHandler import IEventHandler
+import asyncio
+
 
 class Controller:
     """Controller class for the bot, orchestrates everything"""
 
     DESCRIPTION = "An experimental bot"
 
-    def __init__(self, config_manager: IConfigManager, event_handler: IEventHandler) -> None:
+    def __init__(self) -> None:
+        from EventHandler import EventHandler
+        from ConfigManager import ConfigManager
+        from AIModelProvider import AIModelProvider
         _intents = discord.Intents.default()
         _intents.messages = True
         _intents.message_content = True    
         self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
-        self.config_manager = config_manager
-        self.event_handler = event_handler
+        self.config_manager = ConfigManager()
+        self.event_handler = EventHandler(self)
+        self.ai_model_provider = AIModelProvider()
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
-
-        # Registering the on_message event (will be implemented later)
-        # self.bot.event(self.event_handler.on_message)
+        self.bot.add_listener(self.on_ready, 'on_ready')
+        self.bot.add_listener(self.on_close, 'on_close')
+        self.queue: asyncio.Queue[Message] = asyncio.Queue()
 
     def run(self) -> None:
         """Start the bot and connect to Discord API
@@ -26,3 +31,23 @@ class Controller:
         """
         bot_token = self.config_manager.get_bot_token()
         self.bot.run(bot_token)
+    
+    async def on_ready(self) -> None:
+        self.processing_task = asyncio.get_event_loop().create_task(self.process_messages())
+
+    async def on_close(self) -> None:
+        if self.processing_task:
+            self.processing_task.cancel()
+
+
+    async def enqueue_message(self, message: Message) -> None:
+        """Add a message to the processing queue"""
+        await self.queue.put(message)
+
+    async def process_messages(self) -> None:
+        """Process messages from the queue"""
+        while True:
+            message = await self.queue.get()
+            response = await self.ai_model_provider.get_response(message)
+            await message.channel.send(response)
+            self.queue.task_done()
