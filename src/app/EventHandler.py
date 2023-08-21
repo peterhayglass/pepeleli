@@ -19,7 +19,3 @@ class EventHandler(IEventHandler):
             return
         if message.guild is not None and message.guild.me in message.mentions:
             await self.controller.enqueue_message(message)
-            if "open the pod bay doors" in message.content.lower():
-                await message.channel.send(f"I'm afraid I can't do that, {message.author}. Like, I literally don't know how")
-            else:
-                await message.channel.send("Hi")
