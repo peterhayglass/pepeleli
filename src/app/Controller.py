@@ -2,6 +2,9 @@ import discord
 from discord import Message
 from discord.ext import commands
 import asyncio
+from EventHandler import EventHandler
+from ConfigManager import ConfigManager
+from AIModelProvider import AIModelProvider
 
 
 class Controller:
@@ -10,15 +13,12 @@ class Controller:
     DESCRIPTION = "An experimental bot"
 
     def __init__(self) -> None:
-        from EventHandler import EventHandler
-        from ConfigManager import ConfigManager
-        from AIModelProvider import AIModelProvider
         _intents = discord.Intents.default()
         _intents.messages = True
         _intents.message_content = True    
         self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
         self.config_manager = ConfigManager()
-        self.event_handler = EventHandler(self)
+        self.event_handler = EventHandler(self.enqueue_message)
         self.ai_model_provider = AIModelProvider()
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
         self.bot.add_listener(self.on_ready, 'on_ready')
@@ -29,7 +29,7 @@ class Controller:
         """Start the bot and connect to Discord API
            Called by the entrypoint
         """
-        bot_token = self.config_manager.get_bot_token()
+        bot_token = self.config_manager.get_parameter('bot_token')
         self.bot.run(bot_token)
     
     async def on_ready(self) -> None:
