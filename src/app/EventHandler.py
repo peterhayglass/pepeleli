@@ -1,12 +1,15 @@
 from IEventHandler import IEventHandler
 from discord import Message
 from typing import Awaitable, Callable
+from ILogger import ILogger
 
 
 class EventHandler(IEventHandler):
     """Implementation of the Event Handler"""
-    
-    def __init__(self, enqueue_message: Callable[[Message], Awaitable[None]]) -> None:
+    def __init__(self, 
+                enqueue_message: Callable[[Message], Awaitable[None]],
+                logger: ILogger
+                ) -> None:
         """Initialize the Event Handler
         
         Args: 
@@ -16,11 +19,13 @@ class EventHandler(IEventHandler):
         Returns: None
         """
         self.enqueue_message = enqueue_message
+        self.logger = logger
+
 
     async def on_message(self, message: Message) -> None:
         """Handle a received message"""
-        print(f"Received message: {message}")
-        print(f"Received message content: {message.content}")
+        self.logger.info(f"Received message: {message}")
+        self.logger.info(f"Received message content: {message.content}")
         if message.author.bot: #don't respond to a message the bot itself sent
             return
         if message.guild is not None and message.guild.me in message.mentions:

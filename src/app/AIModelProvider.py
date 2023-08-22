@@ -3,13 +3,18 @@ from IAIModelProvider import IAIModelProvider
 from discord import Message
 from typing import Any
 import aiohttp
+from ILogger import ILogger
 
 
 class AIModelProvider(IAIModelProvider):
 
-    def __init__(self, config_manager: IConfigManager) -> None:
+    def __init__(self, 
+                config_manager: IConfigManager,
+                logger: ILogger
+                ) -> None:
         self.AI_PROVIDER_HOST = config_manager.get_parameter('AI_PROVIDER_HOST')
         self.URI = f'https://{self.AI_PROVIDER_HOST}/api/v1/chat'
+        self.logger = logger
         return
 
 
@@ -26,11 +31,11 @@ class AIModelProvider(IAIModelProvider):
                     return response_json['results'][0]['history']['internal'][-1][1]
 
         except aiohttp.ClientError as e:
-            print(f"A ClientError occurred while communicating with the AI model: {e}")
+            self.logger.exception("A ClientError occurred while communicating with the AI model.", e)
             return "A ClientError occurred while communicating with the AI model."
 
         except Exception as e:
-            print(f"An unexpected error while communicating with the AI model: {e}")
+            self.logger.exception("An unexpected error occurred while communicating with the AI model.", e)
             return "An unexpected error occurred while communicating with the AI model."
 
 
