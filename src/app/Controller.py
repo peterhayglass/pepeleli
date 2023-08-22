@@ -19,7 +19,7 @@ class Controller:
         self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
         self.config_manager = ConfigManager()
         self.event_handler = EventHandler(self.enqueue_message)
-        self.ai_model_provider = AIModelProvider()
+        self.ai_model_provider = AIModelProvider(self.config_manager)
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
         self.bot.add_listener(self.on_ready, 'on_ready')
         self.bot.add_listener(self.on_close, 'on_close')
@@ -39,15 +39,17 @@ class Controller:
         if self.processing_task:
             self.processing_task.cancel()
 
-
     async def enqueue_message(self, message: Message) -> None:
         """Add a message to the processing queue"""
         await self.queue.put(message)
 
     async def process_messages(self) -> None:
-        """Process messages from the queue"""
+        """Background task to process messages and send generated responses when ready"""
         while True:
             message = await self.queue.get()
-            response = await self.ai_model_provider.get_response(message)
-            await message.channel.send(response)
+            try:
+                response = await self.ai_model_provider.get_response(message)
+                await message.channel.send(response)
+            except Exception as e:
+                print(f"An error occurred while processing message {message.id}: {e}")
             self.queue.task_done()

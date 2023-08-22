@@ -7,7 +7,7 @@ class ConfigManager(IConfigManager):
     REGION = 'us-west-2'
     PARAM_MAPPING = {
         'bot_token': 'BOT_TOKEN',
-        'AI_MODEL_URI': 'AI_MODEL_URI',
+        'AI_PROVIDER_HOST': 'AI_PROVIDER_HOST'
     }
 
     def __init__(self) -> None:

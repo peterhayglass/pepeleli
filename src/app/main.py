@@ -1,6 +1,4 @@
 from Controller import Controller
-from ConfigManager import ConfigManager
-from EventHandler import EventHandler
 
 
 ### application entrypoint
