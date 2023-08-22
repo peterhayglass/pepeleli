@@ -9,6 +9,7 @@ boto3 = "*"
 mypy = "*"
 boto3-stubs = {extras = ["ssm"], version = "*"}
 asyncio = "*"
+aiohttp = "*"
 
 [dev-packages]
 
