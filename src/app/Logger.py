@@ -1,4 +1,3 @@
-from winreg import REG_BINARY
 import boto3
 import datetime
 from ILogger import ILogger
