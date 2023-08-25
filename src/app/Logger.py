@@ -1,5 +1,6 @@
 import boto3
 import datetime
+import traceback
 from ILogger import ILogger
 from typing import Any
 
@@ -52,4 +53,5 @@ class Logger(ILogger):
 
 
     def exception(self, message: str, exception: Exception, *args: Any) -> None:
-        self.put_log(f"EXCEPTION: {message.format(*args)}\nDetails: {str(exception)}")
+        trace = traceback.format_exc()
+        self.put_log(f"EXCEPTION: {message.format(*args)}\nDetails: {str(exception)}\nTraceback:\n{trace}")

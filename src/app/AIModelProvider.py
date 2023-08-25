@@ -7,6 +7,10 @@ from ILogger import ILogger
 
 
 class AIModelProvider(IAIModelProvider):
+    """AIModelProvider implementation for the oobabooga/text-generation-webui API
+    See https://github.com/oobabooga/text-generation-webui
+    
+    """
 
     def __init__(self, 
                 config_manager: IConfigManager,
