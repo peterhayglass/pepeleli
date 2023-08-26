@@ -1,9 +1,10 @@
 from IConfigManager import IConfigManager
 from IAIModelProvider import IAIModelProvider
 from discord import Message
-from typing import Any
-import aiohttp
+from typing import Any, Dict, AsyncGenerator
+import websockets
 from ILogger import ILogger
+import json
 
 
 class AIModelProvider(IAIModelProvider):
@@ -17,30 +18,35 @@ class AIModelProvider(IAIModelProvider):
                 logger: ILogger
                 ) -> None:
         self.AI_PROVIDER_HOST = config_manager.get_parameter('AI_PROVIDER_HOST')
-        self.URI = f'https://{self.AI_PROVIDER_HOST}/api/v1/chat'
+        self.URI = f'ws://{self.AI_PROVIDER_HOST}/api/v1/chat-stream'
         self.logger = logger
         return
 
-
     async def get_response(self, message: Message) -> str:
-        """Makes a request to the AI model
+        accumulated_history = {}
+        async for new_history in self._stream_response(message):
+            accumulated_history = new_history
+        return accumulated_history['internal'][-1][1]
+
+
+    async def _stream_response(self, message: Message) -> AsyncGenerator[Dict[str, Any], None]:
+        """Open a websocket to the AI model API, request and stream a response
         """
         payload = self._construct_payload(message)
-        timeout = aiohttp.ClientTimeout(total=40)  # 40 seconds.  LLMs on cheap hardware are slow
         try:
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(self.URI, json=payload) as response:
-                    response.raise_for_status()  # Raises an exception if the HTTP status is an error
-                    response_json = await response.json()
-                    return response_json['results'][0]['history']['internal'][-1][1]
-
-        except aiohttp.ClientError as e:
-            self.logger.exception("A ClientError occurred while communicating with the AI model.", e)
-            return "A ClientError occurred while communicating with the AI model."
-
+            async with websockets.connect(self.URI, ping_interval=None) as websocket: #type: ignore
+                await websocket.send(json.dumps(payload))
+                while True:
+                    incoming_data = await websocket.recv()
+                    incoming_data = json.loads(incoming_data)
+                    match incoming_data['event']:
+                        case 'text_stream':
+                            yield incoming_data['history']
+                        case 'stream_end':
+                            return
         except Exception as e:
             self.logger.exception("An unexpected error occurred while communicating with the AI model.", e)
-            return "An unexpected error occurred while communicating with the AI model."
+            return
 
 
     def _construct_payload(self, message: Message) -> Any:
