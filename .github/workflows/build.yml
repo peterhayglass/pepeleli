@@ -34,7 +34,7 @@ jobs:
 
   
   build-and-push:
-    needs: check-types
+    needs: typecheck-and-test
     runs-on: ubuntu-latest
     env:
       AWS_DEFAULT_REGION: us-west-2
