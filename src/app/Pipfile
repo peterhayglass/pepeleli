@@ -12,6 +12,7 @@ asyncio = "*"
 aiohttp = "*"
 setuptools = "*"
 websockets = "*"
+pytest = "*"
 
 [dev-packages]
 
