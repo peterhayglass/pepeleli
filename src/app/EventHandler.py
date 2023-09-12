@@ -23,7 +23,9 @@ class EventHandler(IEventHandler):
 
 
     async def on_message(self, message: Message) -> None:
-        """Handle a received message"""
+        """Handle a received message. Discord calls this when any message is sent
+        If the message "mentions" (tags) the bot, put it in the processing queue
+        """
         self.logger.info(f"Received message: {message}\n Received message content: {message.content}")
         if message.author.bot: #don't respond to a message the bot itself sent
             return

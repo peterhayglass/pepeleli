@@ -13,18 +13,20 @@ class Controller:
     DESCRIPTION = "An experimental bot"
 
 
-    def __init__(self) -> None:
-        _intents = discord.Intents.default()
-        _intents.messages = True
-        _intents.message_content = True    
-        self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
+    def __init__(self) -> None:       
         self.logger = Logger()
         self.config_manager = ConfigManager(self.logger)
         self.event_handler = EventHandler(self.enqueue_message, self.logger)
         self.ai_model_provider = AIModelProvider(self.config_manager, self.logger)
+        
+        _intents = discord.Intents.default()
+        _intents.messages = True
+        _intents.message_content = True  
+        self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
         self.bot.add_listener(self.on_ready, 'on_ready')
         self.bot.add_listener(self.on_close, 'on_close')
+        
         self.queue: asyncio.Queue[Message] = asyncio.Queue()
 
 
@@ -37,10 +39,14 @@ class Controller:
     
 
     async def on_ready(self) -> None:
+        """Runs once the bot is connected and logged in to Discord
+        """
         self.processing_task = asyncio.get_event_loop().create_task(self.process_messages())
 
 
     async def on_close(self) -> None:
+        """Runs when disconnecting from Discord
+        """
         if self.processing_task:
             self.processing_task.cancel()
 

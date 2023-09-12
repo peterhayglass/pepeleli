@@ -26,6 +26,12 @@ class AIModelProvider(IAIModelProvider):
 
     
     async def get_response(self, message: Message) -> str:
+        """Get an AI response for a given user message, 
+        also considering that user's recent chat history.
+
+        Args: message (str): the user's message
+        Returns: a string containing the AI's response
+        """
         existing_history = self.history.get(message.author.id, self.BLANK_HISTORY)
         new_history = {}
 
@@ -39,6 +45,12 @@ class AIModelProvider(IAIModelProvider):
 
     async def _stream_response(self, message: Message, history: dict) -> AsyncGenerator[dict, None]:
         """Open a websocket to the AI model API, request and stream a response
+        Args: 
+            message (str): the user's latest message, to be responded to
+            history (dict): the user's conversation history with the bot up to now
+        Returns: 
+            AsyncGenerator yielding a dictionary that contains the newly-updated chat history,
+            including the newly generated AI response.
         """
         payload = self._construct_payload(message, history)
         try:
