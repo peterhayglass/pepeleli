@@ -69,3 +69,28 @@ async def test_on_message_mention(
         await event_handler.on_message(mock_message)
         mock_logger.info.assert_called()
         mock_enqueue_message.assert_called_with(mock_message)
+
+
+@pytest.mark.asyncio
+async def test_on_message_with_guild_bot_not_mentioned(
+    event_handler: EventHandler,
+    mock_message: Mock,
+    mock_enqueue_message: AsyncMock
+) -> None:
+        mock_message.guild = Mock()
+        mock_message.mentions = []
+        
+        await event_handler.on_message(mock_message)
+        mock_enqueue_message.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_on_message_enqueue_message_exception(
+    event_handler: EventHandler,
+    mock_message: Mock,
+    mock_enqueue_message: AsyncMock,
+    mock_logger: Mock
+) -> None:
+        mock_enqueue_message.side_effect = Exception("Some error")
+        await event_handler.on_message(mock_message)
+        mock_logger.exception.assert_called()

@@ -24,9 +24,12 @@ class EventHandler(IEventHandler):
 
     async def on_message(self, message: Message) -> None:
         """Handle a received message"""
-        self.logger.info(f"Received message: {message}")
-        self.logger.info(f"Received message content: {message.content}")
+        self.logger.info(f"Received message: {message}\n Received message content: {message.content}")
         if message.author.bot: #don't respond to a message the bot itself sent
             return
         if message.guild is not None and message.guild.me in message.mentions:
-            await self.enqueue_message(message)
+            try:
+                await self.enqueue_message(message)
+            except Exception as e:
+                self.logger.exception("enqueue_message threw an exception", e)
+                pass

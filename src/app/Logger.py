@@ -23,17 +23,21 @@ class Logger(ILogger):
 
 
     def put_log(self, message: str) -> None:
-        timestamp = int(datetime.datetime.now().timestamp() * 1000) # CloudWatch expects milliseconds
-        self.client.put_log_events(
-            logGroupName=self.log_group_name,
-            logStreamName=self.log_stream_name,
-            logEvents=[
-                {
-                    'timestamp': timestamp,
-                    'message': message
-                }
-            ]
-        )
+        try:
+            timestamp = int(datetime.datetime.now().timestamp() * 1000) # CloudWatch expects milliseconds
+            self.client.put_log_events(
+                logGroupName=self.log_group_name,
+                logStreamName=self.log_stream_name,
+                logEvents=[
+                    {
+                        'timestamp': timestamp,
+                        'message': message
+                    }
+                ]
+            )
+        except Exception as e:
+            #todo: track logging failures?
+            pass
 
 
     def info(self, message: str, *args: Any) -> None:
