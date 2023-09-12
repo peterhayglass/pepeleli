@@ -29,7 +29,7 @@ class AIModelProvider(IAIModelProvider):
         return accumulated_history['internal'][-1][1]
 
 
-    async def _stream_response(self, message: Message) -> AsyncGenerator[Dict[str, Any], None]:
+    async def _stream_response(self, message: Message) -> AsyncGenerator[dict, None]:
         """Open a websocket to the AI model API, request and stream a response
         """
         payload = self._construct_payload(message)
