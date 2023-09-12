@@ -1,7 +1,7 @@
 from IConfigManager import IConfigManager
 from IAIModelProvider import IAIModelProvider
 from discord import Message
-from typing import Any, Dict, AsyncGenerator
+from typing import Any, AsyncGenerator
 import websockets
 from ILogger import ILogger
 import json
@@ -20,19 +20,27 @@ class AIModelProvider(IAIModelProvider):
         self.AI_PROVIDER_HOST = config_manager.get_parameter('AI_PROVIDER_HOST')
         self.URI = f'ws://{self.AI_PROVIDER_HOST}/api/v1/chat-stream'
         self.logger = logger
+        self.history: dict = {}
+        self.BLANK_HISTORY: dict =  {'internal': [], 'visible': []}
         return
 
+    
     async def get_response(self, message: Message) -> str:
-        accumulated_history = {}
-        async for new_history in self._stream_response(message):
-            accumulated_history = new_history
+        existing_history = self.history.get(message.author.id, self.BLANK_HISTORY)
+        new_history = {}
+
+        async for history_stream_item in self._stream_response(message, existing_history):
+            new_history = history_stream_item
+
+        accumulated_history = new_history
+        self.history[message.author.id] = accumulated_history
         return accumulated_history['internal'][-1][1]
 
 
-    async def _stream_response(self, message: Message) -> AsyncGenerator[dict, None]:
+    async def _stream_response(self, message: Message, history: dict) -> AsyncGenerator[dict, None]:
         """Open a websocket to the AI model API, request and stream a response
         """
-        payload = self._construct_payload(message)
+        payload = self._construct_payload(message, history)
         try:
             async with websockets.connect(self.URI, ping_interval=None) as websocket: #type: ignore
                 await websocket.send(json.dumps(payload))
@@ -49,11 +57,10 @@ class AIModelProvider(IAIModelProvider):
             return
 
 
-    def _construct_payload(self, message: Message) -> Any:
+    def _construct_payload(self, message: Message, history: dict) -> Any:
         """Prepare payload to go to the AI model API, containing user's message.
            Essentially a proof of concept implementation for now.
            Most of the hardcoded stuff I will make customizable later."""
-        history: dict = {'internal': [], 'visible': []}
         return {
             'user_input': message.content,
             'max_new_tokens': 250,
