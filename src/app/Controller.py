@@ -25,7 +25,10 @@ class Controller:
         try:
             self.ai_model_provider = BaseAIModelProviderFactory.create(ai_provider_type, self.config_manager, self.logger)
         except ValueError as ve:
-            self.logger.error(str(ve))
+            self.logger.exception("an exception was raised trying to find the AIModelProvider to start", ve)
+            sys.exit(1)
+        except Exception as e:
+            self.logger.exception("an unexpected exception was raised trying to start the AIModelProvider", e)
             sys.exit(1)
         
         _intents = discord.Intents.default()
