@@ -1,11 +1,15 @@
+import sys
 import discord
 from discord import Message
 from discord.ext import commands
 import asyncio
 from EventHandler import EventHandler
 from ConfigManager import ConfigManager
-from AIModelProvider import AIModelProvider
 from Logger import Logger
+from ai.OobaAIModelProvider import OobaAIModelProvider
+from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
+import ai.OobaAIModelProviderFactory
+import ai.OpenAIModelProviderFactory
 
 
 class Controller:
@@ -17,7 +21,12 @@ class Controller:
         self.logger = Logger()
         self.config_manager = ConfigManager(self.logger)
         self.event_handler = EventHandler(self.enqueue_message, self.logger)
-        self.ai_model_provider = AIModelProvider(self.config_manager, self.logger)
+        ai_provider_type = self.config_manager.get_parameter('AI_PROVIDER_TYPE') 
+        try:
+            self.ai_model_provider = BaseAIModelProviderFactory.create(ai_provider_type, self.config_manager, self.logger)
+        except ValueError as ve:
+            self.logger.error(str(ve))
+            sys.exit(1)
         
         _intents = discord.Intents.default()
         _intents.messages = True

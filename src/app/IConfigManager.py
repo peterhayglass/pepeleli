@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class IConfigManager(ABC):
     """Interface for the Configuration Manager"""
    

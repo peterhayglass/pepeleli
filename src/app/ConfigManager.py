@@ -8,7 +8,9 @@ class ConfigManager(IConfigManager):
     REGION = 'us-west-2' #this is stupid.  todo: fix
     PARAM_MAPPING = {
         'bot_token': 'BOT_TOKEN',
-        'AI_PROVIDER_HOST': 'AI_PROVIDER_HOST'
+        'OOBA_AI_PROVIDER_HOST': 'OOBA_AI_PROVIDER_HOST',
+        'AI_PROVIDER_TYPE': 'AI_PROVIDER_TYPE',
+        'OPENAI_API_KEY': 'OPENAI_API_KEY'
     }
 
 

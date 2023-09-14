@@ -4,11 +4,11 @@ from unittest.mock import patch, Mock, AsyncMock, MagicMock
 from IConfigManager import IConfigManager
 from ILogger import ILogger
 from discord import Message
-from AIModelProvider import AIModelProvider
+from ai.OobaAIModelProvider import OobaAIModelProvider
 
 
 class AIModelProviderTestSetup(NamedTuple):
-    ai_model_provider: AIModelProvider
+    ai_model_provider: OobaAIModelProvider
     mock_config_manager: Mock
     mock_logger: Mock
     mock_websocket: AsyncMock
@@ -24,7 +24,7 @@ def setup() -> Generator[AIModelProviderTestSetup, None, None]:
     mock_config_manager.get_parameter.return_value = 'http://example.com'
     mock_logger = Mock(spec=ILogger)
     mock_websocket = AsyncMock()
-    ai_model_provider = AIModelProvider(mock_config_manager, mock_logger)
+    ai_model_provider = OobaAIModelProvider(mock_config_manager, mock_logger)
     
     yield AIModelProviderTestSetup(ai_model_provider, mock_config_manager, mock_logger, mock_websocket)
 

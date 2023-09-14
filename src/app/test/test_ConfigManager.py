@@ -28,15 +28,14 @@ def test_init(setup: ConfigManagerTestSetup) -> None:
 
 
 def test_load_parameters(setup: ConfigManagerTestSetup) -> None:
-    param_values = {'bot_token': 'token123', 'AI_PROVIDER_HOST': 'http://example.com'}
     setup.mock_ssm_client.get_parameter.side_effect = (
         lambda Name, WithDecryption: 
-            {'Parameter': {'Value': param_values[Name]}}
+            {'Parameter': {'Value': f"{Name}_fake_value"}}
         )
     setup.config_manager._load_parameters()
     
     for param_name, env_var_name in setup.config_manager.PARAM_MAPPING.items():
-        assert os.environ[env_var_name] == param_values[param_name]
+        assert os.environ[env_var_name] == f"{param_name}_fake_value"
 
 
 def test_get_parameter_exists(setup: ConfigManagerTestSetup) -> None:

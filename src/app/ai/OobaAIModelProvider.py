@@ -1,5 +1,5 @@
 from IConfigManager import IConfigManager
-from IAIModelProvider import IAIModelProvider
+from ai.IAIModelProvider import IAIModelProvider
 from discord import Message
 from typing import Any, AsyncGenerator
 import websockets
@@ -7,7 +7,7 @@ from ILogger import ILogger
 import json
 
 
-class AIModelProvider(IAIModelProvider):
+class OobaAIModelProvider(IAIModelProvider):
     """AIModelProvider implementation for the oobabooga/text-generation-webui API
     See https://github.com/oobabooga/text-generation-webui
     
@@ -17,7 +17,7 @@ class AIModelProvider(IAIModelProvider):
                 config_manager: IConfigManager,
                 logger: ILogger
                 ) -> None:
-        self.AI_PROVIDER_HOST = config_manager.get_parameter('AI_PROVIDER_HOST')
+        self.AI_PROVIDER_HOST = config_manager.get_parameter('OOBA_AI_PROVIDER_HOST')
         self.URI = f'ws://{self.AI_PROVIDER_HOST}/api/v1/chat-stream'
         self.logger = logger
         self.history: dict = {}
@@ -75,12 +75,12 @@ class AIModelProvider(IAIModelProvider):
            Most of the hardcoded stuff I will make customizable later."""
         return {
             'user_input': message.content,
-            'max_new_tokens': 250,
+            'max_new_tokens': 300,
             'auto_max_new_tokens': False,
             'history': history,
             'mode': 'chat-instruct',
             'character': 'pepeleli',
-            'instruction_template': 'pepeleli', 
+            'instruction_template': 'pepe-synthia', 
             'your_name': message.author.display_name,
             'regenerate': False,
             '_continue': False,

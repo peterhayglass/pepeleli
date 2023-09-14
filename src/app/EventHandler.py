@@ -1,7 +1,7 @@
-from IEventHandler import IEventHandler
 from discord import Message
 from typing import Awaitable, Callable
 from ILogger import ILogger
+from IEventHandler import IEventHandler
 
 
 class EventHandler(IEventHandler):
