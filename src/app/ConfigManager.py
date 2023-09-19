@@ -10,7 +10,9 @@ class ConfigManager(IConfigManager):
         'bot_token': 'BOT_TOKEN',
         'OOBA_AI_PROVIDER_HOST': 'OOBA_AI_PROVIDER_HOST',
         'AI_PROVIDER_TYPE': 'AI_PROVIDER_TYPE',
-        'OPENAI_API_KEY': 'OPENAI_API_KEY'
+        'OPENAI_API_KEY': 'OPENAI_API_KEY',
+        'OPENAI_RESPONSE_MODEL': 'OPENAI_RESPONSE_MODEL',
+        'MONITOR_CHANNELS': 'MONITOR_CHANNELS'
     }
 
 

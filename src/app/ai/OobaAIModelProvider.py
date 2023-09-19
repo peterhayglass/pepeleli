@@ -43,6 +43,10 @@ class OobaAIModelProvider(IAIModelProvider):
         return accumulated_history['internal'][-1][1]
 
 
+    async def add_user_message(self, message: Message) -> None:
+        raise NotImplementedError("TODO")
+
+
     async def _stream_response(self, message: Message, history: dict) -> AsyncGenerator[dict, None]:
         """Open a websocket to the AI model API, request and stream a response
         Args: 
