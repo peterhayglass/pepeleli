@@ -37,10 +37,11 @@ class OpenAIModelProvider(IAIModelProvider):
             str: The response from the AI model.
         """
         self._history_append_user(message)
-        
+        channel_history = self.history.get(message.channel.id)
+
         response = await openai.ChatCompletion.acreate(
             model=self.RESPONSE_MODEL, 
-            messages=self.history
+            messages=channel_history
         )
         response_content = response['choices'][0]['message']['content']
         self.logger.debug("generated a response: {} \n based on history: {}", response_content, self.history)

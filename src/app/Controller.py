@@ -21,13 +21,6 @@ class Controller:
 
 
     def __init__(self) -> None:
-        self.event_loop = asyncio.get_event_loop()
-
-        if platform.system() != 'Windows':
-            self.event_loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
-            self.event_loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
-        else: #on Windows, for local testing
-            atexit.register(self.win_handle_shutdown)
 
         self.logger = Logger()
         self.config_manager = ConfigManager(self.logger)
@@ -59,6 +52,15 @@ class Controller:
         self.bot.add_listener(self.on_ready, 'on_ready')
         self.bot.add_listener(self.on_close, 'on_close')
         
+        self.event_loop = self.bot.loop
+        
+        if platform.system() != 'Windows':
+            self.event_loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
+            self.event_loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
+        else: #on Windows, for local testing
+            atexit.register(self.win_handle_shutdown)
+        
+
         self.queue: asyncio.Queue[Message] = asyncio.Queue()
         try:
             self.MONITOR_CHANNELS: list = json.loads(
@@ -80,7 +82,8 @@ class Controller:
     async def on_ready(self) -> None:
         """Runs once the websocket is connected to Discord
         """
-        self.processing_task = self.event_loop.create_task(self.process_messages())
+        self.processing_task = self.bot.loop.create_task(self.process_messages())
+        """
         for channel_id in self.MONITOR_CHANNELS:
             channel = self.bot.get_channel(channel_id)
             if isinstance(channel, (TextChannel, Thread)):
@@ -88,6 +91,7 @@ class Controller:
                     "in this channel, but will only reply when tagged`")
             else:
                 self.logger.error(f"Channel id {channel_id} in MONITOR_CHANNELS is invalid channel type")
+                """
 
 
     async def on_close(self) -> None:
