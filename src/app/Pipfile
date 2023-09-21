@@ -15,6 +15,7 @@ websockets = "*"
 pytest = "*"
 pytest-asyncio = "*"
 openai = "*"
+tiktoken = "*"
 
 [dev-packages]
 

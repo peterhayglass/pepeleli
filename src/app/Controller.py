@@ -32,7 +32,7 @@ class Controller:
                 self.config_manager, 
                 self.logger)
         except ValueError as ve:
-            self.logger.exception("an exception was raised trying to find the AIModelProvider to start", ve)
+            self.logger.exception("a ValueError was raised trying to start the AIModelProvider ", ve)
             sys.exit(1)
         except Exception as e:
             self.logger.exception("an unexpected exception was raised trying to start the AIModelProvider", e)
@@ -51,16 +51,13 @@ class Controller:
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
         self.bot.add_listener(self.on_ready, 'on_ready')
         self.bot.add_listener(self.on_close, 'on_close')
-        
-        self.event_loop = self.bot.loop
-        
+              
         if platform.system() != 'Windows':
-            self.event_loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
-            self.event_loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
+            self.bot.loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
+            self.bot.loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
         else: #on Windows, for local testing
             atexit.register(self.win_handle_shutdown)
         
-
         self.queue: asyncio.Queue[Message] = asyncio.Queue()
         try:
             self.MONITOR_CHANNELS: list = json.loads(
@@ -83,7 +80,7 @@ class Controller:
         """Runs once the websocket is connected to Discord
         """
         self.processing_task = self.bot.loop.create_task(self.process_messages())
-        """
+        
         for channel_id in self.MONITOR_CHANNELS:
             channel = self.bot.get_channel(channel_id)
             if isinstance(channel, (TextChannel, Thread)):
@@ -91,7 +88,7 @@ class Controller:
                     "in this channel, but will only reply when tagged`")
             else:
                 self.logger.error(f"Channel id {channel_id} in MONITOR_CHANNELS is invalid channel type")
-                """
+                
 
 
     async def on_close(self) -> None:
@@ -104,9 +101,9 @@ class Controller:
         """This is run when we get SIGINT or SIGTERM, to shut down the bot
         """
         try:
-            self.event_loop.run_until_complete(self.shutdown())
+            self.bot.loop.run_until_complete(self.shutdown())
         finally:
-            self.event_loop.close()
+            self.bot.loop.close()
 
 
     def win_handle_shutdown(self) -> None:
@@ -114,20 +111,12 @@ class Controller:
         such as a keyboard interrupt
         """
 
-        for channel_id in self.MONITOR_CHANNELS:
-            channel = self.bot.get_channel(channel_id)
-            if isinstance(channel, (TextChannel, Thread)):
-                self.event_loop.run_until_complete(channel.send("`pepeleli is going offline.  conversation history will be forgotten`"))
-            else:
-                self.logger.error(f"Channel id {channel_id} in MONITOR_CHANNELS is invalid channel type")
-
-
-        self.event_loop.call_soon_threadsafe(self.processing_task.cancel)
+        self.bot.loop.call_soon_threadsafe(self.processing_task.cancel)
 
         try:
-            self.event_loop.run_until_complete(self.shutdown())
+            self.bot.loop.run_until_complete(self.shutdown())
         finally:
-            self.event_loop.close()
+            self.bot.loop.close()
 
 
     async def shutdown(self) -> None:
