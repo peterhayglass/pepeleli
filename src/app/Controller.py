@@ -85,7 +85,8 @@ class Controller:
             channel = self.bot.get_channel(channel_id)
             if isinstance(channel, (TextChannel, Thread)):
                 await channel.send("`pepeleli is online and listening to everything " 
-                    "in this channel, but will only reply when tagged`")
+                    "in this channel, but I will only reply when tagged. "
+                    "I can't remember any conversations prior to this.")
             else:
                 self.logger.error(f"Channel id {channel_id} in MONITOR_CHANNELS is invalid channel type")
                 
