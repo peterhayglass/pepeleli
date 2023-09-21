@@ -136,7 +136,8 @@ class Controller:
             message = await self.queue.get()
             try:
                 response = await self.ai_model_provider.get_response(message)
-                await message.channel.send(response)
+                await message.channel.send(response, reference=message)
+
             except asyncio.CancelledError as ce:
                 self.logger.error(f"process_messages cancelled by a CancellationError: {ce}")
                 raise
