@@ -51,12 +51,6 @@ class Controller:
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
         self.bot.add_listener(self.on_ready, 'on_ready')
         self.bot.add_listener(self.on_close, 'on_close')
-              
-        if platform.system() != 'Windows':
-            self.bot.loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
-            self.bot.loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
-        else: #on Windows, for local testing
-            atexit.register(self.win_handle_shutdown)
         
         self.queue: asyncio.Queue[Message] = asyncio.Queue()
         try:
@@ -79,6 +73,12 @@ class Controller:
     async def on_ready(self) -> None:
         """Runs once the websocket is connected to Discord
         """
+        if platform.system() != 'Windows':
+            self.bot.loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
+            self.bot.loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
+        else: #on Windows, for local testing
+            atexit.register(self.win_handle_shutdown)
+
         self.processing_task = self.bot.loop.create_task(self.process_messages())
         
         for channel_id in self.MONITOR_CHANNELS:
@@ -86,11 +86,10 @@ class Controller:
             if isinstance(channel, (TextChannel, Thread)):
                 await channel.send("`pepeleli is online and listening to everything " 
                     "in this channel, but I will only reply when tagged. "
-                    "I can't remember any conversations prior to this.")
+                    "I can't remember any conversations prior to this.`")
             else:
                 self.logger.error(f"Channel id {channel_id} in MONITOR_CHANNELS is invalid channel type")
                 
-
 
     async def on_close(self) -> None:
         """Runs when disconnecting from Discord
