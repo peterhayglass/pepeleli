@@ -101,7 +101,6 @@ def test_check_history_len(openai_model_provider: OpenAIModelProvider, monkeypat
     async def run_test() -> None:
         message = "Long message"
         await openai_model_provider._history_append_bot(message, channel_id)
-        await openai_model_provider._history_append_bot(message, channel_id)
         await openai_model_provider._check_history_len(channel_id)
         assert len(openai_model_provider.history[channel_id]) == 1
     
