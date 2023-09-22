@@ -53,6 +53,7 @@ class Controller:
         self.bot.add_listener(self.on_close, 'on_close')
         
         self.queue: asyncio.Queue[Message] = asyncio.Queue()
+        self.DISCORD_MSG_MAX_LEN = 2000
         try:
             self.MONITOR_CHANNELS: list = json.loads(
                 self.config_manager.get_parameter("MONITOR_CHANNELS")
@@ -136,7 +137,9 @@ class Controller:
             message = await self.queue.get()
             try:
                 response = await self.ai_model_provider.get_response(message)
-                await message.channel.send(response, reference=message)
+                chunked_response = self._chunk_response(response)
+                for response in chunked_response:
+                    await message.channel.send(response, reference=message)
 
             except asyncio.CancelledError as ce:
                 self.logger.error(f"process_messages cancelled by a CancellationError: {ce}")
@@ -149,3 +152,14 @@ class Controller:
                 )
             finally:
                 self.queue.task_done()
+
+
+    def _chunk_response(self, response: str) -> list[str]:
+        """Split the AI response into chunks small enough to fit in a discord message,
+        so we can send long responses as multiple messages
+        """
+        chunks = []
+        for i in range(0, len(response), self.DISCORD_MSG_MAX_LEN):
+            chunk = response[i : i + self.DISCORD_MSG_MAX_LEN]
+            chunks.append(chunk)
+        return chunks
