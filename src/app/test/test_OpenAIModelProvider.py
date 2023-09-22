@@ -15,7 +15,7 @@ def config_manager() -> IConfigManager:
     config_manager.get_parameter.side_effect = [
         "fake_api_key",
         "fake_response_model",
-        "1000",
+        "4096",
     ]
     return config_manager
 
@@ -32,12 +32,14 @@ def openai_model_provider(config_manager: IConfigManager, logger: ILogger) -> Op
 
 def test_init(openai_model_provider: OpenAIModelProvider) -> None:
     assert openai_model_provider.RESPONSE_MODEL == "fake_response_model"
-    assert openai_model_provider.MAX_CONTEXT_LEN == 1000
+    assert openai_model_provider.MAX_CONTEXT_LEN == 4096
 
 
 def test_get_response(openai_model_provider: OpenAIModelProvider, monkeypatch: MonkeyPatch) -> None:
     msg = MagicMock(spec=Message)
-    msg.content = ""
+    msg.content = "User message"
+    msg.author.display_name = "Username"
+    msg.channel.id = 1
 
     async def mock_chat_completion(*args: Any, **kwargs: Any) -> dict:
         completion = {"choices": [{"message": {"content": "Ai response"}}]}
@@ -114,5 +116,11 @@ def test_count_tokens(openai_model_provider: OpenAIModelProvider, monkeypatch: M
 
     monkeypatch.setattr("tiktoken.get_encoding", mock_get_encoding)
 
-    token_count = openai_model_provider._count_tokens("test string")
-    assert token_count == 5
+    token_count = openai_model_provider._count_tokens([{"content": "test string", "name": "test_name"}])
+    assert token_count == (5 + 5 + 3 + 1 + 3)
+    #5 each for the two mock encodings (the message and the name), 
+    #plus 3 per message for the one message
+    #plus 1 per name for the one name
+    #plus 3 to prime the model to respond
+    #this is valid for gpt-3.5-turbo-0613 and all versions to date of gpt-4
+    #see section 6 at https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb

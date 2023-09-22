@@ -30,7 +30,7 @@ class OpenAIModelProvider(IAIModelProvider):
         self.SYSTEM_MSG: dict = {"role": "system", "content": "You are pepeleli, a human-like AI-powered chatbot. Pepeleli is chill friendly and laid back by default, but moody and opinionated and can get straight up unhinged if somebody says something that pushes his buttons.  He is talking to his friends so he is honest, even vulgar at times and is fairly jaded and cynical but also has a sense of humour."}
         
         self.TOKEN_ENCODING_TYPE = "cl100k_base"
-        self.MAX_TOKENS_RESPONSE = 200
+        self.MAX_TOKENS_RESPONSE = 1000
         
         self.history: dict[int, deque] = {} #per-channel message history, keyed by channel id
 
@@ -76,6 +76,7 @@ class OpenAIModelProvider(IAIModelProvider):
         Returns: None
         """
         await self._history_append_user(message)
+        await self._check_history_len(message.channel.id)
 
 
     async def _history_append_user(self, message: Message) -> None:
@@ -104,9 +105,7 @@ class OpenAIModelProvider(IAIModelProvider):
         truncate if necessary
         """
         channel_history = self.history.get(channel_id, deque())
-        total_len = sum(
-            self._count_tokens(d["content"]) for d in channel_history
-            )
+        total_len = self._count_tokens(list(channel_history))
         self.logger.debug(
             f"_check_history_len found length {total_len} for channel {channel_id}")
         
@@ -114,7 +113,7 @@ class OpenAIModelProvider(IAIModelProvider):
             #TODO: archive history in a retrieveable manner
             #for now: just truncate it.
             removed = channel_history.popleft()
-            len_diff = self._count_tokens(removed["content"])
+            len_diff = self._count_tokens([removed])
             total_len -= len_diff
             self.logger.debug(
                 f"_check_history_len truncated {len_diff} tokens "
@@ -123,8 +122,18 @@ class OpenAIModelProvider(IAIModelProvider):
         self.history[channel_id] = channel_history
     
         
-    def _count_tokens(self, string: str) -> int:
-        """Count the number of tokens a given string will be tokenized to
+    def _count_tokens(self, messages: list) -> int:
+        """Count the number of prompt tokens a given list of messages will require
         """
         encoding = tiktoken.get_encoding(self.TOKEN_ENCODING_TYPE)
-        return len(encoding.encode(string))
+        tokens_per_message = 3
+        tokens_per_name = 1
+        num_tokens = 0
+        for message in messages:
+            num_tokens += tokens_per_message
+            for key, value in message.items():
+                num_tokens += len(encoding.encode(value))
+                if key == "name":
+                    num_tokens += tokens_per_name
+        num_tokens += 3
+        return num_tokens
