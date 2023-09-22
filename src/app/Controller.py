@@ -143,5 +143,9 @@ class Controller:
                 raise
             except Exception as e:
                 self.logger.exception(f"An error occurred while processing message {message.id}.", e)
+                await message.channel.send(
+                    "An unexpected error occurred while communicating with the AI model.", 
+                    reference=message
+                )
             finally:
                 self.queue.task_done()
