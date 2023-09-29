@@ -13,6 +13,7 @@ from ai.OobaAIModelProvider import OobaAIModelProvider
 from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
 import ai.OobaAIModelProviderFactory
 import ai.OpenAIModelProviderFactory
+import ai.OpenAIInstructModelProviderFactory
 
 
 class Controller:
@@ -25,10 +26,10 @@ class Controller:
         self.logger = Logger()
         self.config_manager = ConfigManager(self.logger)
         
-        ai_provider_type = self.config_manager.get_parameter('AI_PROVIDER_TYPE') 
+        self.AI_PROVIDER_TYPE = self.config_manager.get_parameter('AI_PROVIDER_TYPE') 
         try:
             self.ai_model_provider = BaseAIModelProviderFactory.create(
-                ai_provider_type, 
+                self.AI_PROVIDER_TYPE, 
                 self.config_manager, 
                 self.logger)
         except ValueError as ve:
@@ -87,7 +88,8 @@ class Controller:
             if isinstance(channel, (TextChannel, Thread)):
                 await channel.send("`pepeleli is online and listening to everything " 
                     "in this channel, but I will only reply when tagged. "
-                    "I can't remember any conversations prior to this.`")
+                    "I can't remember any conversations prior to this. "
+                    f"Using {self.AI_PROVIDER_TYPE}`")
             else:
                 self.logger.error(f"Channel id {channel_id} in MONITOR_CHANNELS is invalid channel type")
                 
