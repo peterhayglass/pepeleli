@@ -1,7 +1,10 @@
 import json
 import re
-from discord import Message
+import time 
 from typing import Awaitable, Callable
+
+from discord import Message
+
 from ILogger import ILogger
 from IEventHandler import IEventHandler
 from IConfigManager import IConfigManager
@@ -31,11 +34,16 @@ class EventHandler(IEventHandler):
         self.remember_message = remember_message
         self.logger = logger
         self.config_manager = config_manager
+        self.user_message_history: dict = {}
 
         try:
-            self.MONITOR_CHANNELS: list = json.loads(
-                self.config_manager.get_parameter("MONITOR_CHANNELS")
-                )
+            self.RATE_LIMITS = json.loads(self.config_manager.get_parameter("RATE_LIMITS"))
+        except Exception as e:
+            self.logger.exception("EventHandler encountered an exception loading rate limits", e)
+            raise
+
+        try:
+            self.MONITOR_CHANNELS: list = json.loads(self.config_manager.get_parameter("MONITOR_CHANNELS"))
             self.BOT_USERNAME = self.config_manager.get_parameter("BOT_USERNAME")
         except Exception as e:
             self.logger.exception("EventHandler encounted an unexpected exception loading config values", e)
@@ -57,8 +65,15 @@ class EventHandler(IEventHandler):
         if message.author.bot: #don't need to handle a message the bot itself sent
             return
         
+        if await self._should_rate_limit(message.author.id):
+            self.logger.info(f"User {message.author.name} is being rate-limited.")
+            await message.channel.send(f"{message.author.mention}, "
+                "you are being rate limited. Please slow down.")
+            return
+        await self._update_message_history(message.author.id)
+
         try:
-            message.content = await self.replace_mentions(message)
+            message.content = await self._replace_mentions(message)
         except Exception as e:
             self.logger.exception("replace_mentions threw an exception", e)
             pass
@@ -79,9 +94,16 @@ class EventHandler(IEventHandler):
                 pass
 
 
-    async def replace_mentions(self, message: Message) -> str:
-        """replace mentions with int userids with a tag with a username
-        so the LLM can understand when people tag/mention each other"""
+    async def _replace_mentions(self, message: Message) -> str:
+        """
+        Replace user id mentions/tags in message content with usernames
+
+        Args:
+            message (Message): The message object containing the mentions.
+
+        Returns:
+            str: The updated message content
+        """
         content = message.content
         pattern = re.compile(r'<@!?(\d+)>') #match mentions/tags like <@USER_ID> and <@!USER_ID>
         matches = pattern.findall(content)
@@ -91,8 +113,54 @@ class EventHandler(IEventHandler):
                 return content
             user = message.guild.get_member(int(user_id))
             if user:
-                user_mention = f'<@{user_id}>'
+                user_mention = re.compile(r'(<@!?' + str(user_id) + r'>)')  # Updated this to use regex
                 user_username = f'@{user.display_name}'
-                content = content.replace(user_mention, user_username)
+                content = user_mention.sub(user_username, content)  # Use .sub() for the replacement
 
         return content
+
+
+    async def _should_rate_limit(self, user_id: int) -> bool:
+        """
+        Determine if a user should be rate-limited based on their message history
+
+        Args:
+            user_id (int): The user ID
+
+        Returns:
+            bool: True if the user should be rate-limited, otherwise False.
+        """
+        now = time.time()
+        user_history = self.user_message_history.get(user_id, [])
+
+        for tier, limits in self.RATE_LIMITS.items():
+            messages_in_interval = list(
+                filter(lambda x: now - x <= limits["interval"], user_history)
+            )
+            if len(messages_in_interval) >= limits["messages"]:
+                return True
+
+        return False
+
+
+    async def _update_message_history(self, user_id: int) -> None:
+        """
+        Update the message history for a user by adding a timestamp for the latest message.
+        Also cleans up old timestamps that are no longer needed for rate limiting checks.
+
+        Args:
+            user_id (int): The user's ID.
+
+        Returns: None
+        """
+        now = time.time()
+        if user_id in self.user_message_history:
+            longest_interval = max(limits["interval"] for _, limits in self.RATE_LIMITS.items())
+            self.user_message_history[user_id] = list(
+                filter(
+                    lambda x: now - x <= longest_interval, self.user_message_history[user_id]
+                )
+            )
+            self.user_message_history[user_id].append(now)
+        else:
+            self.user_message_history[user_id] = [now]

@@ -1,4 +1,6 @@
 import pytest
+import time
+from time import sleep
 from unittest.mock import AsyncMock, Mock
 from discord import Message
 from ILogger import ILogger
@@ -28,6 +30,8 @@ def mock_config_manager() -> Mock:
     def mock_get_parameter(key: str) -> str:
         if key == "MONITOR_CHANNELS":
             return '["mock_channel_id_1", "mock_channel_id_2"]'
+        elif key == "RATE_LIMITS":
+            return '{ "tier_1": {"messages": 8, "interval": 60}, "tier_2": {"messages": 15, "interval": 300} }'
         else:
             return f"mock_value_for_{key}"
             
@@ -44,6 +48,7 @@ def mock_message() -> Mock:
     msg.mentions = [msg.guild.me]
     msg.content = "test message"
     msg.channel.id = "mock_channel_id_1"
+    msg.channel.send = AsyncMock()
     return msg
 
 
@@ -120,3 +125,50 @@ async def test_on_message_enqueue_message_exception(
         mock_enqueue_message.side_effect = Exception("Some error")
         await event_handler.on_message(mock_message)
         mock_logger.exception.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_on_message_rate_limit(
+    event_handler: EventHandler,
+    mock_message: Mock,
+    mock_enqueue_message: AsyncMock,
+    mock_logger: Mock,
+    mock_config_manager: Mock
+) -> None:
+        for i in range(10):
+            await event_handler.on_message(mock_message)
+        assert mock_enqueue_message.call_count == 8
+        assert mock_logger.info.call_count == 2  #2 messages should have been rate limited
+
+
+@pytest.mark.asyncio
+async def test_on_message_replace_mentions(
+    event_handler: EventHandler,
+    mock_message: Mock,
+) -> None:
+        mock_message.content = "<@12345> <@!67890>"
+        mock_message.guild.get_member.side_effect = lambda user_id: Mock(display_name=f"User{user_id}")
+        
+        replaced_content = await event_handler._replace_mentions(mock_message)
+        assert replaced_content == "@User12345 @User67890"
+
+
+async def set_mock_message_history(
+    mock_event_handler: EventHandler, 
+    user_id: int, 
+    delay: int, 
+    count: int) -> None:
+    """
+    Add dummy timestamps to the user's message history for testing purposes.
+    
+    Args:
+        mock_event_handler (EventHandler): The mocked EventHandler object with user_message_history
+        user_id (int): The user ID whose message history is being manipulated
+        delay (int): The delay between consecutive messages in seconds
+        count (int): The number of dummy timestamps to be added
+
+    Returns: None
+    """
+    now = time.time()
+    timestamps = [(now - i * delay) for i in range(count)]
+    mock_event_handler.user_message_history[user_id] = timestamps
