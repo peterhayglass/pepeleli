@@ -47,7 +47,8 @@ class Controller:
 
         _intents = discord.Intents.default()
         _intents.messages = True
-        _intents.message_content = True  
+        _intents.message_content = True
+          
         self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
         self.bot.add_listener(self.on_ready, 'on_ready')

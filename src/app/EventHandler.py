@@ -38,11 +38,6 @@ class EventHandler(IEventHandler):
 
         try:
             self.RATE_LIMITS = json.loads(self.config_manager.get_parameter("RATE_LIMITS"))
-        except Exception as e:
-            self.logger.exception("EventHandler encountered an exception loading rate limits", e)
-            raise
-
-        try:
             self.MONITOR_CHANNELS: list = json.loads(self.config_manager.get_parameter("MONITOR_CHANNELS"))
             self.BOT_USERNAME = self.config_manager.get_parameter("BOT_USERNAME")
         except Exception as e:
@@ -68,7 +63,8 @@ class EventHandler(IEventHandler):
         if await self._should_rate_limit(message.author.id):
             self.logger.info(f"User {message.author.name} is being rate-limited.")
             await message.channel.send(f"{message.author.mention}, "
-                "you are being rate limited. Please slow down.")
+                "you are being rate limited, your last message was ignored. "
+                "Please slow down.")
             return
         await self._update_message_history(message.author.id)
 
@@ -113,9 +109,9 @@ class EventHandler(IEventHandler):
                 return content
             user = message.guild.get_member(int(user_id))
             if user:
-                user_mention = re.compile(r'(<@!?' + str(user_id) + r'>)')  # Updated this to use regex
+                user_mention = re.compile(r'(<@!?' + str(user_id) + r'>)')
                 user_username = f'@{user.display_name}'
-                content = user_mention.sub(user_username, content)  # Use .sub() for the replacement
+                content = user_mention.sub(user_username, content)
 
         return content
 

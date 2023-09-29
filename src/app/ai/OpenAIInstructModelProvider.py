@@ -156,6 +156,8 @@ class OpenAIInstructModelProvider(IAIModelProvider):
 
 
     async def _build_prompt(self, channel_id: int) -> str:
+        """Build prompt for a new request to the LLM,
+        for a given channel history"""
         prompt = self.SYSTEM_MSG + self.INSTRUCTION
         history = self.history.get(channel_id, deque())
         for message in history:
