@@ -32,7 +32,7 @@ class OpenAIInstructModelProvider(IAIModelProvider):
 ### character info: {self.BOT_USERNAME} is an eccentric character, chill, friendly and laid back by default, but moody and opinionated and not shy about sharing opinions.  {self.BOT_USERNAME} can even get straight up unhinged if somebody says something that pushes his buttons, is fairly jaded and cynical in general but also has a sense of humour.  He is talking to his friends so he is honest, even a bit vulgar at times.  Despite the rough edges, {self.BOT_USERNAME} has a good heart.
 ### End system message\n"""
 
-        self.INSTRUCTION = f"### Instruction: continue the chat dialogue below by writing a reply in character as {self.BOT_USERNAME}.\n"
+        self.INSTRUCTION = f"### Instruction: cocontinue the chat dialogue below by writing only a single reply in character as {self.BOT_USERNAME}. Do not write messages for other users.\n"
         self.TOKEN_ENCODING_TYPE = "cl100k_base"
         self.MAX_TOKENS_RESPONSE = 1000
 
@@ -99,9 +99,10 @@ class OpenAIInstructModelProvider(IAIModelProvider):
     async def _history_append_user(self, message: Message) -> None:
         """Append a new user message to the conversation history
         """
-        new_item = {}
+        new_item: dict = {}
         new_item["content"] = message.content
         new_item["name"] = message.author.display_name
+        new_item["id"] = message.id
 
         self.history.setdefault(message.channel.id, deque()).append(new_item)
         self.logger.debug("_history_append_user is adding: {} \n new history is now: {}", new_item, self.history)
@@ -110,7 +111,7 @@ class OpenAIInstructModelProvider(IAIModelProvider):
     async def _history_append_bot(self, message: str, channel_id: int) -> None:
         """Append a new AI/bot message to the conversation history
         """
-        new_item = {}
+        new_item: dict = {}
         new_item["content"] = message
         new_item["name"] = self.BOT_USERNAME
         
