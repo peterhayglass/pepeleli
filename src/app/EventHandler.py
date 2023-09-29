@@ -1,4 +1,5 @@
 import json
+import re
 from discord import Message
 from typing import Awaitable, Callable
 from ILogger import ILogger
@@ -35,8 +36,9 @@ class EventHandler(IEventHandler):
             self.MONITOR_CHANNELS: list = json.loads(
                 self.config_manager.get_parameter("MONITOR_CHANNELS")
                 )
+            self.BOT_USERNAME = self.config_manager.get_parameter("BOT_USERNAME")
         except Exception as e:
-            self.logger.exception("EventHandler encounted an unexpected exception loading MONITOR_CHANNELS", e)
+            self.logger.exception("EventHandler encounted an unexpected exception loading config values", e)
             raise
 
 
@@ -44,10 +46,6 @@ class EventHandler(IEventHandler):
         """Handle a received message. Discord calls this when any message is sent.
         If the message "mentions" (tags) the bot, respond to it.
         Otherwise, just add it to the conversation history.
-
-        Note to self: right now we don't care which channel the message was sent in,
-        this works because the bot has only been granted access to read messages in one testing channel.
-        Maybe should eventually add a feature here to filter messages by channel?
         """
         self.logger.debug(f"Received message: {message}\n Received message content: {message.content}")
 
@@ -58,8 +56,15 @@ class EventHandler(IEventHandler):
 
         if message.author.bot: #don't need to handle a message the bot itself sent
             return
+        
+        try:
+            message.content = await self.replace_mentions(message)
+        except Exception as e:
+            self.logger.exception("replace_mentions threw an exception", e)
+            pass
 
-        if message.guild is not None and message.guild.me in message.mentions:
+        if ((message.guild is not None and message.guild.me in message.mentions)
+            or(self.BOT_USERNAME.lower() in message.content.lower())):
             #bot was mentioned
             try:
                 await self.respond_to_message(message)
@@ -72,3 +77,22 @@ class EventHandler(IEventHandler):
             except Exception as e:
                 self.logger.exception("remember_message threw an exception", e)
                 pass
+
+
+    async def replace_mentions(self, message: Message) -> str:
+        """replace mentions with int userids with a tag with a username
+        so the LLM can understand when people tag/mention each other"""
+        content = message.content
+        pattern = re.compile(r'<@!?(\d+)>') #match mentions/tags like <@USER_ID> and <@!USER_ID>
+        matches = pattern.findall(content)
+
+        for user_id in matches:
+            if not message.guild:
+                return content
+            user = message.guild.get_member(int(user_id))
+            if user:
+                user_mention = f'<@{user_id}>'
+                user_username = f'@{user.display_name}'
+                content = content.replace(user_mention, user_username)
+
+        return content
