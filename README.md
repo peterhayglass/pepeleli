@@ -14,12 +14,8 @@ This is an experimental project and a very early work in progress.  Current func
 
 - The bot only responds when tagged, but the context used in generating a response includes all recent messages in the channel (not just messages where the bot was tagged.)
 
-- Although the conversation history automatically includes messages from any and all users active in the monitored chat channel(s), testing has shown that with my current implementation the AI model is bad at distinguishing which user said what.  
-
 
 ## Current priorities / objectives
-
-- Explore ways to help the AI model differentiate which user said what in multi-user conversations.  Maybe via prompt engineering?  Maybe via a combination of prompt engineering and switching from a chat model to an instruct model?  I'm not sure how much of the problem here might be that chat models have been fine tuned and aligned using mostly examples of one-on-one conversations.
 
 - Explore ways to save (and make use of) much more conversation history than what fits in the context window size.  I plan to try storing conversation history as embeddings in a vector database. Then using a retrieval-augmented generation approach where we use semantic text search to retrieve relevant history to include in the prompt when it's time to generate a new response.
 
