@@ -58,10 +58,11 @@ class Controller:
         self.DISCORD_MSG_MAX_LEN = 2000
         try:
             self.MONITOR_CHANNELS: list = json.loads(
-                self.config_manager.get_parameter("MONITOR_CHANNELS")
-                )
+                self.config_manager.get_parameter("MONITOR_CHANNELS"))
+            self.ANNOUNCE_CHANNELS: list = json.loads(
+                self.config_manager.get_parameter("ANNOUNCE_CHANNELS"))                
         except Exception as e:
-            self.logger.exception("Controller encounted an unexpected exception loading MONITOR_CHANNELS", e)
+            self.logger.exception("Controller encounted an unexpected exception loading channels config", e)
             raise
 
 
@@ -84,7 +85,7 @@ class Controller:
 
         self.processing_task = self.bot.loop.create_task(self.process_messages())
         
-        for channel_id in self.MONITOR_CHANNELS:
+        for channel_id in self.ANNOUNCE_CHANNELS:
             channel = self.bot.get_channel(channel_id)
             if isinstance(channel, (TextChannel, Thread)):
                 await channel.send("`pepeleli is online and listening to everything " 

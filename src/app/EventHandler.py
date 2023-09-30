@@ -133,9 +133,9 @@ class EventHandler(IEventHandler):
         user_history = self.user_message_history.get(message.author.id, [])
 
         for tier, limits in self.RATE_LIMITS.items():
-            messages_in_interval = list(
-                filter(lambda x: now - x < limits["interval"], user_history)
-            )
+            messages_in_interval = [
+                timestamp for timestamp in user_history if now - timestamp < limits["interval"]
+            ]
             if len(messages_in_interval) > limits["messages"]:
                 self.logger.warning(f"User {message.author.name} is being rate-limited by {tier}")
                 return True
