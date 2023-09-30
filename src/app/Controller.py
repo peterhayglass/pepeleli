@@ -140,9 +140,13 @@ class Controller:
             message = await self.queue.get()
             try:
                 response = await self.ai_model_provider.get_response(message)
+                if not response:
+                    continue
+
                 chunked_response = self._chunk_response(response)
                 for response in chunked_response:
-                    await message.channel.send(response, reference=message)
+                    sent_msg = await message.channel.send(response, reference=message)
+                    await self.ai_model_provider.add_bot_message(sent_msg)
 
             except asyncio.CancelledError as ce:
                 self.logger.error(f"process_messages cancelled by a CancellationError: {ce}")

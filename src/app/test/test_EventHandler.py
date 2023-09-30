@@ -59,7 +59,10 @@ def event_handler(
     mock_config_manager: Mock,
     mock_logger: Mock
 ) -> EventHandler:
-        return EventHandler(mock_enqueue_message, mock_remember_message, mock_config_manager, mock_logger)
+            handler = EventHandler(mock_enqueue_message, mock_remember_message, mock_config_manager, mock_logger)
+            handler.respond_to_message = mock_enqueue_message
+            handler.remember_message = mock_remember_message
+            return handler
 
 
 
@@ -138,7 +141,7 @@ async def test_on_message_rate_limit(
         for i in range(10):
             await event_handler.on_message(mock_message)
         assert mock_enqueue_message.call_count == 8
-        assert mock_logger.info.call_count == 2  #2 messages should have been rate limited
+        assert mock_message.channel.send.call_count == 2 #two messages should have been rate limited
 
 
 @pytest.mark.asyncio

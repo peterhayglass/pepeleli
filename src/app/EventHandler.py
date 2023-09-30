@@ -59,14 +59,9 @@ class EventHandler(IEventHandler):
 
         if message.author.bot: #don't need to handle a message the bot itself sent
             return
-        
-        if await self._should_rate_limit(message.author.id):
-            self.logger.info(f"User {message.author.name} is being rate-limited.")
-            await message.channel.send(f"{message.author.mention}, "
-                "you are being rate limited, your last message was ignored. "
-                "Please slow down.")
-            return
-        await self._update_message_history(message.author.id)
+
+        if message.reference:
+            message.content = f"[reply to: {message.reference.message_id}] " + message.content
 
         try:
             message.content = await self._replace_mentions(message)
@@ -77,6 +72,14 @@ class EventHandler(IEventHandler):
         if ((message.guild is not None and message.guild.me in message.mentions)
             or(self.BOT_USERNAME.lower() in message.content.lower())):
             #bot was mentioned
+            await self._update_message_history(message.author.id)
+
+            if await self._should_rate_limit(message):
+                await message.channel.send(f"{message.author.mention}, "
+                    "you are being rate limited, your last message was ignored. "
+                    "Please slow down.")    
+                return
+            
             try:
                 await self.respond_to_message(message)
             except Exception as e:
@@ -116,7 +119,7 @@ class EventHandler(IEventHandler):
         return content
 
 
-    async def _should_rate_limit(self, user_id: int) -> bool:
+    async def _should_rate_limit(self, message: Message) -> bool:
         """
         Determine if a user should be rate-limited based on their message history
 
@@ -127,13 +130,14 @@ class EventHandler(IEventHandler):
             bool: True if the user should be rate-limited, otherwise False.
         """
         now = time.time()
-        user_history = self.user_message_history.get(user_id, [])
+        user_history = self.user_message_history.get(message.author.id, [])
 
         for tier, limits in self.RATE_LIMITS.items():
             messages_in_interval = list(
-                filter(lambda x: now - x <= limits["interval"], user_history)
+                filter(lambda x: now - x < limits["interval"], user_history)
             )
-            if len(messages_in_interval) >= limits["messages"]:
+            if len(messages_in_interval) > limits["messages"]:
+                self.logger.warning(f"User {message.author.name} is being rate-limited by {tier}")
                 return True
 
         return False

@@ -45,6 +45,10 @@ class OobaAIModelProvider(IAIModelProvider):
 
     async def add_user_message(self, message: Message) -> None:
         raise NotImplementedError("TODO")
+    
+
+    async def add_bot_message(self, message: Message) -> None:
+        raise NotImplementedError("TODO")
 
 
     async def _stream_response(self, message: Message, history: dict) -> AsyncGenerator[dict, None]:

@@ -137,3 +137,7 @@ class OpenAIModelProvider(IAIModelProvider):
                     num_tokens += tokens_per_name
         num_tokens += 3
         return num_tokens
+
+
+    async def add_bot_message(self, message: Message) -> None:
+        raise NotImplementedError("TODO")
