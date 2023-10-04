@@ -52,7 +52,7 @@ def test_get_response_instruct(
         },
     )
 
-    async def mock_get_moderation(text: str) -> None:
+    async def mock_get_moderation(text: str, channel_id: int) -> None:
         return None
     monkeypatch.setattr(openai_instruct_model_provider, "_get_moderation", mock_get_moderation)
 
@@ -68,7 +68,7 @@ def test_add_user_message_instruct(openai_instruct_model_provider: OpenAIInstruc
     msg.author.display_name = "Username"
     msg.channel.id = 1
 
-    async def mock_get_moderation(text: str) -> None:
+    async def mock_get_moderation(text: str, channel_id: int) -> None:
         return None
     monkeypatch.setattr(openai_instruct_model_provider, "_get_moderation", mock_get_moderation)
 

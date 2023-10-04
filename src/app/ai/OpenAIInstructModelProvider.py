@@ -70,7 +70,7 @@ Consider checking out these links to find someone to talk to:
             str: The response from the AI model.
         """
         
-        moderate_reasons = await self._get_moderation(message.content)
+        moderate_reasons = await self._get_moderation(message.content, message.channel.id)
         if moderate_reasons:
             #message.content = "[message content redacted due to content policy violation]"
             #await self._history_append_user(message)
@@ -106,7 +106,7 @@ Consider checking out these links to find someone to talk to:
         response_content = response['choices'][0]['text']
         self.logger.debug("generated a response: {} \n based on prompt:\n{}", response_content, _prompt)
         
-        moderate_reasons = await self._get_moderation(response_content)
+        moderate_reasons = await self._get_moderation(response_content, message.channel.id)
         if moderate_reasons:
             return ("`the AI-generated response to your message has been blocked "
                 f"by content moderation and will not be shown. \nreason: {moderate_reasons}`"
@@ -124,7 +124,7 @@ Consider checking out these links to find someone to talk to:
         
         Returns: None
         """
-        moderate_reasons = await self._get_moderation(message.content)
+        moderate_reasons = await self._get_moderation(message.content, message.channel.id)
         if moderate_reasons:
             #await message.channel.send(
             #    f"`your message has been blocked by content moderation and will be ignored. \nreason: {moderate_reasons}`",
@@ -219,21 +219,40 @@ Consider checking out these links to find someone to talk to:
         return prompt
 
 
-    def _format_msg(self, message: dict) -> str:
-        return f"<messageID={message.get('id')}> {message.get('name')}: {message.get('content')}\n"
+    def _format_msg(self, message: dict, with_id: bool = True) -> str:
+        if with_id:
+            return f"<messageID={message.get('id')}> {message.get('name')}: {message.get('content')}\n"
+        else:
+            return f"{message.get('name')}: {message.get('content')}\n"
 
 
-    async def _get_moderation(self, text: str) -> Optional[list[str]]:
+    async def _get_moderation(self, text: str, channel_id: int) -> Optional[list[str]]:
         """Classify the given text via openAI moderations endpoint, to determine
         if openAI content policy is potentially being violated.
+        Attempts to include recent conversation history from the same channel,
+        to make a context-aware moderation decision.
 
-        Args: text (string) : the text to classify
+        Args: 
+            text (string) : the new message text to classify.
+            channel_id (int) : id for a channel to include history from,
+                for context-aware moderation.
+
         Returns: a list of strings with the reason(s) to moderate this content,
                  or None if the content is acceptable
         """
-        response = await openai.Moderation.acreate(input=text, model='text-moderation-latest')
+        history = self.history.get(channel_id, deque())
+        context = list(history)[-4:]
+        
+        messages = []
+        for msg in context:
+            messages.append(self._format_msg(msg, with_id=False))
+        messages.append(f"{text}")
+        msg_with_context = "".join(messages)
+
+        response = await openai.Moderation.acreate(input=msg_with_context, model='text-moderation-latest')
         
         moderation = response["results"][0]
+        self.logger.debug("got moderation {} \n for: {}", moderation, msg_with_context)
         if not moderation["flagged"]:
             return None
         
@@ -242,11 +261,11 @@ Consider checking out these links to find someone to talk to:
         reasons = []
         log_reasons = []
         for reason, moderate in categories.items():
-            if moderate:
+            if moderate and (scores[reason] > 0.3):
                 reasons.append(reason)
                 log_reasons.append(f"{reason}: {scores[reason]}")
         
         self.logger.warning(f"moderation matched categories {log_reasons}\n"
-            f"for the text: {text}")
+            f"for the text: {msg_with_context}")
 
         return reasons
