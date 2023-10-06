@@ -141,3 +141,7 @@ class OpenAIModelProvider(IAIModelProvider):
 
     async def add_bot_message(self, message: Message) -> None:
         raise NotImplementedError("TODO")
+    
+
+    async def get_model_name(self) -> str:
+        raise NotImplementedError("TODO")

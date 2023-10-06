@@ -17,7 +17,8 @@ def config_manager_instruct() -> IConfigManager:
         "fake_instruct_response_model",
         "4096",
         "BotUsername",
-        '["<messageID="]'
+        '["<messageID="]',
+        "0"
     ]
     return config_manager_instruct
 

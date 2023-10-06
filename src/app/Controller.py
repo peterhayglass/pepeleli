@@ -86,6 +86,9 @@ class Controller:
 
         self.processing_task = self.bot.loop.create_task(self.process_messages())
         
+        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, 
+                                       name=f"{await self.ai_model_provider.get_model_name()}"))        
+
         for channel_id in self.ANNOUNCE_CHANNELS:
             channel = self.bot.get_channel(channel_id)
             if isinstance(channel, (TextChannel, Thread)):

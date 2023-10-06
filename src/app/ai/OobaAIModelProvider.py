@@ -51,6 +51,10 @@ class OobaAIModelProvider(IAIModelProvider):
         raise NotImplementedError("TODO")
 
 
+    async def get_model_name(self) -> str:
+        raise NotImplementedError("TODO")
+    
+
     async def _stream_response(self, message: Message, history: dict) -> AsyncGenerator[dict, None]:
         """Open a websocket to the AI model API, request and stream a response
         Args: 

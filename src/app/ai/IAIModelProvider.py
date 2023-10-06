@@ -46,3 +46,13 @@ class IAIModelProvider(ABC):
         Returns: None
         """
         pass
+
+
+    @abstractmethod
+    async def get_model_name(self) -> str:
+        """Get the name of the AI model currently used by this provider.
+        
+        Returns:
+            str: The name of the AI model.
+        """
+        pass

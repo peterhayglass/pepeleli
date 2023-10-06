@@ -29,6 +29,7 @@ class OpenAIInstructModelProvider(IAIModelProvider):
             self.MAX_CONTEXT_LEN = int(self.config_manager.get_parameter("OPENAI_MAX_CONTEXT_LEN"))
             self.BOT_USERNAME = self.config_manager.get_parameter("BOT_USERNAME")
             self.STOP_SEQUENCES: list[str] = json.loads(self.config_manager.get_parameter("STOP_SEQUENCES"))
+            self.MODERATION_THRESHOLD = float(self.config_manager.get_parameter("OPENAI_MODERATION_THRESHOLD"))
         except ValueError as ve:
             self.logger.exception("error loading OpenAIModelProvider configuration: ", ve)
             raise
@@ -240,6 +241,9 @@ Consider checking out these links to find someone to talk to:
         Returns: a list of strings with the reason(s) to moderate this content,
                  or None if the content is acceptable
         """
+        if not self.MODERATION_THRESHOLD:
+            return None
+        
         history = self.history.get(channel_id, deque())
         context = list(history)[-4:]
         
@@ -261,7 +265,7 @@ Consider checking out these links to find someone to talk to:
         reasons = []
         log_reasons = []
         for reason, moderate in categories.items():
-            if moderate and (scores[reason] > 0.3):
+            if moderate and (scores[reason] > self.MODERATION_THRESHOLD):
                 reasons.append(reason)
                 log_reasons.append(f"{reason}: {scores[reason]}")
         
@@ -269,3 +273,12 @@ Consider checking out these links to find someone to talk to:
             f"for the text: {msg_with_context}")
 
         return reasons
+    
+
+    async def get_model_name(self) -> str:
+        """Get the name of the AI model currently used by this provider.
+        
+        Returns:
+            str: The name of the AI model.
+        """
+        return self.RESPONSE_MODEL
