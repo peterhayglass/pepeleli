@@ -1,14 +1,19 @@
 from collections import deque
+
+import openai
+import tiktoken
 from discord import Message
+
 from IConfigManager import IConfigManager
 from ILogger import ILogger
 from ai.IAIModelProvider import IAIModelProvider
-import openai
-import tiktoken
 
 
 class OpenAIModelProvider(IAIModelProvider):
-    """OpenAIModelProvider implementation for the OpenAI API"""
+    """AI model provider implementation for the OpenAI API chat completions endpoint.
+    Needs work to catch up with the OpenAIInstructionModelProvider in feature set.
+    Not currently a high priority.
+    """
 
 
     def __init__(self, 
