@@ -1,17 +1,17 @@
 import platform, signal, atexit
 import json
 import sys
+import asyncio
+from types import FrameType
+
 import discord
 from discord import Message, TextChannel, Thread 
 from discord.ext import commands
-import asyncio
-from types import FrameType
+
 from EventHandler import EventHandler
 from ConfigManager import ConfigManager
 from Logger import Logger
-from ai.OobaAIModelProvider import OobaAIModelProvider
 from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
-import ai.OobaAIModelProviderFactory
 import ai.OpenAIModelProviderFactory
 import ai.OpenAIInstructModelProviderFactory
 
