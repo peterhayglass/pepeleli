@@ -3,11 +3,12 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [packages]
 "discord.py" = "*"
 boto3 = "*"
 mypy = "*"
-boto3-stubs = {extras = ["ssm"], version = "*"}
+boto3-stubs = {extras = ["ssm"] }
 asyncio = "*"
 aiohttp = "*"
 setuptools = "*"
@@ -18,6 +19,10 @@ openai = "*"
 tiktoken = "*"
 
 [dev-packages]
+numpy = "*"
+fastapi = "*"
+pydantic = "*"
+uvicorn = "*"
 
 [requires]
 python_version = "3.11"
