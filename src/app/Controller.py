@@ -14,6 +14,7 @@ from Logger import Logger
 from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
 import ai.OpenAIModelProviderFactory
 import ai.OpenAIInstructModelProviderFactory
+import ai.vllm.VllmAIModelProviderFactory
 
 
 class Controller:
