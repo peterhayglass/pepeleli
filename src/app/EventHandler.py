@@ -156,11 +156,10 @@ class EventHandler(IEventHandler):
         now = time.time()
         if user_id in self.user_message_history:
             longest_interval = max(limits["interval"] for _, limits in self.RATE_LIMITS.items())
-            self.user_message_history[user_id] = list(
-                filter(
-                    lambda x: now - x <= longest_interval, self.user_message_history[user_id]
-                )
-            )
+            self.user_message_history[user_id] = [
+                timestamp for timestamp in self.user_message_history[user_id] 
+                    if now - timestamp <= longest_interval
+            ]
             self.user_message_history[user_id].append(now)
         else:
             self.user_message_history[user_id] = [now]

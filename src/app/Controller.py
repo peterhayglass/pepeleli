@@ -95,7 +95,8 @@ class Controller:
                 await channel.send("`pepeleli is online and listening to everything " 
                     "in this channel, but I will only reply when tagged. "
                     "I can't remember any conversations prior to this. "
-                    f"Using {self.AI_PROVIDER_TYPE}`")
+                    f"[Provider type: {self.AI_PROVIDER_TYPE}]"
+                    f"[Model: {await self.ai_model_provider.get_model_name()}]`")
             else:
                 self.logger.error(f"Channel id {channel_id} in MONITOR_CHANNELS is invalid channel type")
                 

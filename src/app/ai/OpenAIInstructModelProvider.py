@@ -25,6 +25,7 @@ class OpenAIInstructModelProvider(IAIModelProvider):
         
         try:
             openai.api_key = self.config_manager.get_parameter("OPENAI_API_KEY")
+            openai.api_base = self.config_manager.get_parameter("OPENAI_INSTRUCT_PROVIDER_BASE_URI")
             self.RESPONSE_MODEL = self.config_manager.get_parameter("OPENAI_INSTRUCT_RESPONSE_MODEL")
             self.MAX_CONTEXT_LEN = int(self.config_manager.get_parameter("OPENAI_MAX_CONTEXT_LEN"))
             self.BOT_USERNAME = self.config_manager.get_parameter("BOT_USERNAME")
@@ -38,14 +39,14 @@ class OpenAIInstructModelProvider(IAIModelProvider):
 ### character info: {self.BOT_USERNAME} is an eccentric character, chill, friendly and laid back by default, but moody and opinionated and not shy about sharing opinions.  {self.BOT_USERNAME} can even get straight up unhinged if somebody says something that pushes his buttons, is fairly jaded and cynical in general but also has a sense of humour.  He is talking to his friends so he is honest, even a bit vulgar at times.  Despite the rough edges, {self.BOT_USERNAME} has a good heart.
 ### End system message\n"""
 
-        self.INSTRUCTION = f"### Instruction: cocontinue the chat dialogue below by writing only a single reply in character as {self.BOT_USERNAME}. Do not write messages for other users.\n"
+        self.INSTRUCTION = f"### Instruction: continue the chat dialogue below by writing only a single reply in character as {self.BOT_USERNAME}. Do not write messages for other users.\n"
         self.MENTAL_HEALTH_MSG = """\nPlease don't harm yourself.
 Consider checking out these links to find someone to talk to:  
     <https://findahelpline.com/i/iasp>
     <https://befrienders.org/> 
     <https://www.samaritans.org/> """
         self.TOKEN_ENCODING_TYPE = "cl100k_base"
-        self.MAX_TOKENS_RESPONSE = 1000
+        self.MAX_TOKENS_RESPONSE = 250
         self.IGNORE_EMOJI = '❌'
 
         self.MAX_HISTORY_LEN = self.MAX_CONTEXT_LEN - (
@@ -92,10 +93,17 @@ Consider checking out these links to find someone to talk to:
         channel_history = self.history.get(message.channel.id, deque())
 
         _prompt = await self._build_prompt(message.channel.id)
-        while self._count_tokens_str(_prompt) > self.MAX_CONTEXT_LEN:
+        _prompt_len = self._count_tokens_str(_prompt)
+        _potential_len = _prompt_len + self.MAX_TOKENS_RESPONSE
+        while _prompt_len > self.MAX_CONTEXT_LEN:
+            self.logger.debug(f"detected excessive prompt length {_prompt_len} at prompt generation, "
+                              f"potential total length {_potential_len}, truncating")
             channel_history.popleft()
             _prompt = await self._build_prompt(message.channel.id)
+            _prompt_len = self._count_tokens_str(_prompt)
+            _potential_len = _prompt_len + self.MAX_TOKENS_RESPONSE
 
+        self.logger.debug(f"final prompt length for request is {_prompt_len}")
         self.history[message.channel.id] = channel_history
 
         response = openai.Completion.create(
@@ -105,7 +113,7 @@ Consider checking out these links to find someone to talk to:
             stop=self.STOP_SEQUENCES
         )
         response_content = response['choices'][0]['text']
-        self.logger.debug("generated a response: {} \n based on prompt:\n{}", response_content, _prompt)
+        self.logger.debug("received a response: {} \n based on prompt:\n{}", response, _prompt)
         
         moderate_reasons = await self._get_moderation(response_content, message.channel.id)
         if moderate_reasons:

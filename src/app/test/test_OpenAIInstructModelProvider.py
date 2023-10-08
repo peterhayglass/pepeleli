@@ -12,14 +12,17 @@ from ai.OpenAIInstructModelProvider import OpenAIInstructModelProvider
 @pytest.fixture
 def config_manager_instruct() -> IConfigManager:
     config_manager_instruct = MagicMock(spec=IConfigManager)
-    config_manager_instruct.get_parameter.side_effect = [
-        "fake_api_key",
-        "fake_instruct_response_model",
-        "4096",
-        "BotUsername",
-        '["<messageID="]',
-        "0"
-    ]
+    fake_params = {
+        "OPENAI_API_KEY": "fake_api_key",
+        "OPENAI_INSTRUCT_PROVIDER_BASE_URI": "fake_base_uri",
+        "OPENAI_INSTRUCT_RESPONSE_MODEL": "fake_instruct_response_model",
+        "OPENAI_MAX_CONTEXT_LEN": "4096",
+        "BOT_USERNAME": "BotUsername",
+        "STOP_SEQUENCES": '["<messageID="]',
+        "OPENAI_MODERATION_THRESHOLD": "0"
+    }
+    config_manager_instruct.get_parameter.side_effect = lambda param_name: fake_params[param_name]
+
     return config_manager_instruct
 
 
