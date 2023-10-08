@@ -1,3 +1,0 @@
-[submodule "src/vllm"]
-	path = src/vllm
-	url = https://github.com/vllm-project/vllm.git
