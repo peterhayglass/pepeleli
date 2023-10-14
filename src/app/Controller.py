@@ -2,7 +2,7 @@ import platform, signal, atexit
 import json
 import sys
 import asyncio
-from typing import Dict
+from typing import Dict, Tuple
 from types import FrameType
 from datetime import datetime
 
@@ -71,7 +71,7 @@ class Controller:
             raise
 
         self.ai_request_semaphore = asyncio.Semaphore(self.MAX_CONCURRENT_AI_REQUESTS)
-        self.queues: Dict[int,asyncio.Queue[Message]] = {}
+        self.queues: Dict[int, asyncio.Queue[Tuple[Message, datetime]]] = {}
 
 
     def run(self) -> None:
@@ -144,21 +144,33 @@ class Controller:
             self.queues[channel_id] = asyncio.Queue()
             self.bot.loop.create_task(
                 self._process_channel_messages(channel_id, self.queues[channel_id]))
-        await self.queues[channel_id].put(message)
+        enqueue_time = datetime.now()
+        await self.queues[channel_id].put((message, enqueue_time))
 
 
-    async def _process_single_message(self, message: Message) -> None:
+    async def _process_single_message(self, message: Message, 
+                                      enqueue_time: datetime
+                                      ) -> None:
         """helper function to process a single message and send a response
         called by process_messages() which handles consuming from queues"""
         async with self.ai_request_semaphore:
             try:
                 response = await self.ai_model_provider.get_response(message)
+                
                 if not response:
                     return
                 chunked_response = self._chunk_response(response)
+                
                 for response in chunked_response:
                     sent_msg = await message.channel.send(response, reference=message)
+                    
+                    response_time = datetime.now()
+                    user_latency = (response_time - enqueue_time).total_seconds() * 1000  # in milliseconds
+                    self.logger.debug(
+                        f"response time for {message.id} was {int(user_latency)} ms")
+                    
                     await self.ai_model_provider.add_bot_message(sent_msg)
+            
             finally:
                 channel_id = message.channel.id
                 self.queues[channel_id].task_done()
@@ -169,15 +181,18 @@ class Controller:
         but without waiting on other channels."""
         while True:
             if not queue.empty():
-                message = await queue.get()
+                message, enqueue_time = await queue.get()
                 
-                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                self.logger.debug(f"starting processing for {message.id} at {timestamp}")
-                
-                await self._process_single_message(message)
+                start_time = datetime.now()
+                start_timestamp = start_time.strftime("%H:%M:%S.%f")[:-3]
+                self.logger.debug(f"starting processing for {message.id} at {start_timestamp}")
 
-                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                self.logger.debug(f"finished processing for {message.id} at {timestamp}")
+                await self._process_single_message(message, enqueue_time)
+
+                end_time = datetime.now()
+                end_timestamp = end_time.strftime("%H:%M:%S.%f")[:-3]
+                time_delta = (end_time - start_time).total_seconds() * 1000  # in milliseconds
+                self.logger.debug(f"finished processing for {message.id} at {end_timestamp}, took {int(time_delta)} ms")
             else:
                 await asyncio.sleep(0.1)
 
