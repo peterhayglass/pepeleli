@@ -9,7 +9,7 @@ class VLLMClient:
     def __init__(self, host: str, port: int) -> None:
         self.host = host
         self.port = port
-        self.base_uri = f"http://{self.host}:{self.port}"
+        self.base_uri = f"https://{self.host}:{self.port}"
 
 
     async def generate_completion(self, prompt: str, stream: bool = False,

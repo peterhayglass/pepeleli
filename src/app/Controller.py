@@ -2,7 +2,9 @@ import platform, signal, atexit
 import json
 import sys
 import asyncio
+from typing import Dict
 from types import FrameType
+from datetime import datetime
 
 import discord
 from discord import Message, TextChannel, Thread 
@@ -56,16 +58,20 @@ class Controller:
         self.bot.add_listener(self.on_ready, 'on_ready')
         self.bot.add_listener(self.on_close, 'on_close')
         
-        self.queue: asyncio.Queue[Message] = asyncio.Queue()
         self.DISCORD_MSG_MAX_LEN = 2000
         try:
             self.MONITOR_CHANNELS: list = json.loads(
                 self.config_manager.get_parameter("MONITOR_CHANNELS"))
             self.ANNOUNCE_CHANNELS: list = json.loads(
                 self.config_manager.get_parameter("ANNOUNCE_CHANNELS"))                
+            self.MAX_CONCURRENT_AI_REQUESTS = int(
+                self.config_manager.get_parameter("MAX_CONCURRENT_AI_REQUESTS"))
         except Exception as e:
             self.logger.exception("Controller encounted an unexpected exception loading channels config", e)
             raise
+
+        self.ai_request_semaphore = asyncio.Semaphore(self.MAX_CONCURRENT_AI_REQUESTS)
+        self.queues: Dict[int,asyncio.Queue[Message]] = {}
 
 
     def run(self) -> None:
@@ -84,8 +90,6 @@ class Controller:
             self.bot.loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
         else: #on Windows, for local testing
             atexit.register(self.win_handle_shutdown)
-
-        self.processing_task = self.bot.loop.create_task(self.process_messages())
         
         await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, 
                                        name=f"{await self.ai_model_provider.get_model_name()}"))        
@@ -121,9 +125,6 @@ class Controller:
         """This is run when we need to shut down the bot on Windows,
         such as a keyboard interrupt
         """
-
-        self.bot.loop.call_soon_threadsafe(self.processing_task.cancel)
-
         try:
             self.bot.loop.run_until_complete(self.shutdown())
         finally:
@@ -138,34 +139,47 @@ class Controller:
 
     async def enqueue_message(self, message: Message) -> None:
         """Add a message to the processing queue"""
-        await self.queue.put(message)
+        channel_id = message.channel.id
+        if channel_id not in self.queues:
+            self.queues[channel_id] = asyncio.Queue()
+            self.bot.loop.create_task(
+                self._process_channel_messages(channel_id, self.queues[channel_id]))
+        await self.queues[channel_id].put(message)
 
 
-    async def process_messages(self) -> None:
-        """Background task to process messages and send generated responses when ready"""
-        while True:
-            message = await self.queue.get()
+    async def _process_single_message(self, message: Message) -> None:
+        """helper function to process a single message and send a response
+        called by process_messages() which handles consuming from queues"""
+        async with self.ai_request_semaphore:
             try:
                 response = await self.ai_model_provider.get_response(message)
                 if not response:
-                    continue
-
+                    return
                 chunked_response = self._chunk_response(response)
                 for response in chunked_response:
                     sent_msg = await message.channel.send(response, reference=message)
                     await self.ai_model_provider.add_bot_message(sent_msg)
-
-            except asyncio.CancelledError as ce:
-                self.logger.error(f"process_messages cancelled by a CancellationError: {ce}")
-                raise
-            except Exception as e:
-                self.logger.exception(f"An error occurred while processing message {message.id}.", e)
-                await message.channel.send(
-                    "An unexpected error occurred while communicating with the AI model.", 
-                    reference=message
-                )
             finally:
-                self.queue.task_done()
+                channel_id = message.channel.id
+                self.queues[channel_id].task_done()
+
+
+    async def _process_channel_messages(self, channel_id: int, queue: asyncio.Queue) -> None:
+        """Process messages from a given channel's message queue sequentially, 
+        but without waiting on other channels."""
+        while True:
+            if not queue.empty():
+                message = await queue.get()
+                
+                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                self.logger.debug(f"starting processing for {message.id} at {timestamp}")
+                
+                await self._process_single_message(message)
+
+                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                self.logger.debug(f"finished processing for {message.id} at {timestamp}")
+            else:
+                await asyncio.sleep(0.1)
 
 
     def _chunk_response(self, response: str) -> list[str]:
