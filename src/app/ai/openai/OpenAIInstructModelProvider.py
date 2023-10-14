@@ -74,9 +74,6 @@ Consider checking out these links to find someone to talk to:
         
         moderate_reasons = await self._get_moderation(message.content, message.channel.id)
         if moderate_reasons:
-            #message.content = "[message content redacted due to content policy violation]"
-            #await self._history_append_user(message)
-            #await self._check_history_len(message.channel.id)
             if any(reason in moderate_reasons for reason in 
             ["self-harm", "self-harm/intent", "self-harm/instructions"]):
                 reason_msg = self.MENTAL_HEALTH_MSG
@@ -135,11 +132,6 @@ Consider checking out these links to find someone to talk to:
         """
         moderate_reasons = await self._get_moderation(message.content, message.channel.id)
         if moderate_reasons:
-            #await message.channel.send(
-            #    f"`your message has been blocked by content moderation and will be ignored. \nreason: {moderate_reasons}`",
-            #    reference=message
-            #)
-            #message.content = "[message content redacted due to content policy violation]"
             self.logger.warning(f"ignoring a message {message.id} due to content moderation. \n"
                 f"reasons: {moderate_reasons} \n message content: {message.content}")
             if not any(reason in moderate_reasons for reason in 

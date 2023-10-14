@@ -1,7 +1,7 @@
 from IConfigManager import IConfigManager
 from ILogger import ILogger
 from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
-from ai.OpenAIModelProvider import OpenAIModelProvider
+from ai.openai.OpenAIModelProvider import OpenAIModelProvider
 from ai.IAIModelProvider import IAIModelProvider
 
 

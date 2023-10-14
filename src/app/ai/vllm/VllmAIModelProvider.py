@@ -1,5 +1,4 @@
 from collections import deque
-from functools import cached_property
 import json
 
 from discord import Message

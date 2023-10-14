@@ -12,8 +12,8 @@ from EventHandler import EventHandler
 from ConfigManager import ConfigManager
 from Logger import Logger
 from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
-import ai.OpenAIModelProviderFactory
-import ai.OpenAIInstructModelProviderFactory
+import ai.openai.OpenAIModelProviderFactory
+import ai.openai.OpenAIInstructModelProviderFactory
 import ai.vllm.VllmAIModelProviderFactory
 
 

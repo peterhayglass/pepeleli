@@ -6,7 +6,7 @@ from typing import Any
 from discord import Message
 from IConfigManager import IConfigManager
 from ILogger import ILogger
-from ai.OpenAIInstructModelProvider import OpenAIInstructModelProvider
+from ai.openai.OpenAIInstructModelProvider import OpenAIInstructModelProvider
 
 
 @pytest.fixture
