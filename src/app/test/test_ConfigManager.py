@@ -15,7 +15,7 @@ class ConfigManagerTestSetup(NamedTuple):
 def setup() -> ConfigManagerTestSetup:
     mock_logger = Mock()
     mock_ssm_client = Mock()
-    mock_ssm_client.get_parameter.return_value = {'Parameter': {'Value': 'some_value'}}
+    mock_ssm_client.get_parameter.return_value = {'Parameter': {'Value': '[]'}}
     
     with patch('boto3.client', return_value=mock_ssm_client):
         config_manager = ConfigManager(mock_logger)
@@ -34,8 +34,8 @@ def test_load_parameters(setup: ConfigManagerTestSetup) -> None:
         )
     setup.config_manager._load_parameters()
     
-    for param_name, env_var_name in setup.config_manager.PARAM_MAPPING.items():
-        assert os.environ[env_var_name] == f"{param_name}_fake_value"
+    for param_name in setup.config_manager.PARAM_KEYS:
+        assert os.environ[param_name] == f"{param_name}_fake_value"
 
 
 def test_get_parameter_exists(setup: ConfigManagerTestSetup) -> None:
