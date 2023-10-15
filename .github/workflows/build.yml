@@ -55,7 +55,7 @@ jobs:
         aws ssm put-parameter --name "OPENAI_API_KEY" --type "SecureString" --value "${{ secrets.OPENAI_API_KEY }}" --overwrite
         aws ssm put-parameter --name "VLLM_API_KEY" --type "SecureString" --value "${{ secrets.VLLM_API_KEY }}" --overwrite
         aws ssm put-parameter --name "BOT_TOKEN" --type "SecureString" --value "${{ secrets.BOT_TOKEN }}" --overwrite
-        aws ssm put-parameter --name "RATE_LIMITS" --type "SecureString" --value "${{ secrets.RATE_LIMITS }}" --overwrite
+        aws ssm put-parameter --name "SECRETS_KEYS" --type "String" --value '["OPENAI_API_KEY", "VLLM_API_KEY", "BOT_TOKEN"]' --overwrite
 
     - name: Login to Amazon ECR
       id: login-ecr

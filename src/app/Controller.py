@@ -78,7 +78,7 @@ class Controller:
         """Start the bot and connect to Discord API
            Called by the entrypoint
         """
-        bot_token = self.config_manager.get_parameter('bot_token')
+        bot_token = self.config_manager.get_parameter('BOT_TOKEN')
         self.bot.run(bot_token)
     
 

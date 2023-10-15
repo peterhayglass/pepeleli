@@ -13,6 +13,13 @@ VLLM_AI_PROVIDER_HOST: u6eo917tmdgyab-8000.proxy.runpod.net
 VLLM_AI_PROVIDER_PORT: 443
 VLLM_MAX_CONTEXT_LEN: 4090
 VLLM_RESPONSE_MODEL: TheBloke/Spicyboros-70B-2.2-AWQ
+RATE_LIMITS: >
+  {
+      "tier_1": {"messages": 8, "interval": 60},
+      "tier_2": {"messages": 25, "interval": 300},
+      "tier_3": {"messages": 50, "interval": 3600},
+      "tier_4": {"messages": 150, "interval": 86400}
+  }
 ANNOUNCE_CHANNELS: >
   [1157565053143351318]
 MONITOR_CHANNELS: >
