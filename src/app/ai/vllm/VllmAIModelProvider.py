@@ -28,6 +28,7 @@ class VllmAIModelProvider(IAIModelProvider):
             self.STOP_SEQUENCES: list[str] = json.loads(self.config_manager.get_parameter("STOP_SEQUENCES"))
             _host = self.config_manager.get_parameter("VLLM_AI_PROVIDER_HOST")
             _port = int(self.config_manager.get_parameter("VLLM_AI_PROVIDER_PORT"))
+            _api_key = self.config_manager.get_parameter("VLLM_API_KEY")
         except ValueError as ve:
             self.logger.exception("error loading VLLMAIModelProvider configuration: ", ve)
             raise
@@ -40,7 +41,7 @@ class VllmAIModelProvider(IAIModelProvider):
         self.IGNORE_EMOJI = '❌'
         
         self.history: dict[int, deque] = {} #per-channel message history, keyed by channel id
-        self.vllm = VLLMClient(_host, _port)
+        self.vllm = VLLMClient(_host, _port, _api_key)
         self._max_history_len: int = 0
 
 

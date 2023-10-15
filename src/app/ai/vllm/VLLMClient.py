@@ -6,10 +6,12 @@ import aiohttp
 
 
 class VLLMClient:
-    def __init__(self, host: str, port: int) -> None:
+    def __init__(self, host: str, port: int, api_key: str) -> None:
         self.host = host
         self.port = port
+        self.api_key = api_key
         self.base_uri = f"https://{self.host}:{self.port}"
+        self.headers = {"Authorization": self.api_key}
 
 
     async def generate_completion(self, prompt: str, stream: bool = False,
@@ -19,7 +21,7 @@ class VLLMClient:
             sampling_params = {}
 
         data = {"prompt": prompt, "stream": stream, **sampling_params}
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(headers=self.headers) as session:
             async with session.post(f"{self.base_uri}/generate", json=data) as resp:
                 result = await resp.json()
 
@@ -36,7 +38,7 @@ class VLLMClient:
             int: the total number of tokens used by the text
         """
         data = {"prompt": text}
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(headers=self.headers) as session:
             async with session.post(f"{self.base_uri}/token_usage", json=data) as resp:
                 result = await resp.json()
 
