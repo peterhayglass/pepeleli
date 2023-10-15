@@ -40,7 +40,7 @@ def test_load_parameters(setup: ConfigManagerTestSetup) -> None:
 
 def test_get_parameter_exists(setup: ConfigManagerTestSetup) -> None:
     os.environ['BOT_TOKEN'] = 'token123'
-    assert setup.config_manager.get_parameter('bot_token') == 'token123'
+    assert setup.config_manager.get_parameter('BOT_TOKEN') == 'token123'
 
 
 def test_get_parameter_not_exists(setup: ConfigManagerTestSetup) -> None:
