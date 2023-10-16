@@ -68,11 +68,11 @@ class EventHandler(IEventHandler):
         except Exception as e:
             self.logger.exception("replace_mentions threw an exception", e)
             pass
-
+        
         if ((message.guild is not None and message.guild.me in message.mentions)
             or(self.BOT_USERNAME.lower() in message.content.lower())):
             #bot was mentioned
-            await self._update_message_history(message.author.id)
+            await self._rl_update_message_history(message.author.id)
 
             if await self._should_rate_limit(message):
                 await message.channel.send(f"{message.author.mention}, "
@@ -81,16 +81,21 @@ class EventHandler(IEventHandler):
                 return
             
             try:
+                await self.remember_message(message)
                 await self.respond_to_message(message)
             except Exception as e:
-                self.logger.exception("respond_to_message threw an exception", e)
+                self.logger.exception("exception in on_message, bot mentioned.", e)
+                await message.channel.send(
+                    "`An unexpected error occurred communicating with the AI language model.  This has been logged.`")
                 pass
-        else:
+
+        else: #bot was not mentioned
             try:
                 await self.remember_message(message)
             except Exception as e:
-                self.logger.exception("remember_message threw an exception", e)
+                self.logger.exception("exception in on_message, bot not mentioned.", e)
                 pass
+                
 
 
     async def _replace_mentions(self, message: Message) -> str:
@@ -143,8 +148,8 @@ class EventHandler(IEventHandler):
         return False
 
 
-    async def _update_message_history(self, user_id: int) -> None:
-        """
+    async def _rl_update_message_history(self, user_id: int) -> None:
+        """For rate limiting purposes.
         Update the message history for a user by adding a timestamp for the latest message.
         Also cleans up old timestamps that are no longer needed for rate limiting checks.
 

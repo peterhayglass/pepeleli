@@ -39,7 +39,8 @@ class OpenAIInstructModelProvider(IAIModelProvider):
 ### character info: {self.BOT_USERNAME} is an eccentric character, chill, friendly and laid back by default, but moody and opinionated and not shy about sharing opinions.  {self.BOT_USERNAME} can even get straight up unhinged if somebody says something that pushes his buttons, is fairly jaded and cynical in general but also has a sense of humour.  He is talking to his friends so he is honest, even a bit vulgar at times.  Despite the rough edges, {self.BOT_USERNAME} has a good heart.
 ### End system message\n"""
 
-        self.INSTRUCTION = f"### Instruction: continue the chat dialogue below by writing only a single reply in character as {self.BOT_USERNAME}. Do not write messages for other users.\n"
+        self.INSTRUCTION = f"### Instruction: continue the chat dialogue below by writing only a single reply in character as {self.BOT_USERNAME}. Do not write messages for other users. Do not write narration, system messages or anything other than dialogue from {self.BOT_USERNAME}"
+        self.REPLY_INSTRUCTION = f" Do not mention message ID numbers or specifically say you are replying, however do consider that {self.BOT_USERNAME} is replying to messageID:"
         self.MENTAL_HEALTH_MSG = """\nPlease don't harm yourself.
 Consider checking out these links to find someone to talk to:  
     <https://findahelpline.com/i/iasp>
@@ -62,8 +63,8 @@ Consider checking out these links to find someone to talk to:
         """Get a response from the AI model for the given user message.
         The AI also considers prior conversation history in deciding its response.
         
-        The user message passed to get_response() is automatically added to history,
-        so do not call add_user_message() separately for the same message.
+        You should also call remember_message() with the same message first,
+        to add it to the conversation history.
 
         Args:
             message (Message): The user message to process.
@@ -84,19 +85,17 @@ Consider checking out these links to find someone to talk to:
             await message.channel.send(reason_msg, reference=message)
             return ""
             
-
-        await self._history_append_user(message)
         await self._check_history_len(message.channel.id)
         channel_history = self.history.get(message.channel.id, deque())
 
-        _prompt = await self._build_prompt(message.channel.id)
+        _prompt = await self._build_prompt(message.channel.id, message.id)
         _prompt_len = self._count_tokens_str(_prompt)
         _potential_len = _prompt_len + self.MAX_TOKENS_RESPONSE
         while _prompt_len > self.MAX_CONTEXT_LEN:
             self.logger.debug(f"detected excessive prompt length {_prompt_len} at prompt generation, "
                               f"potential total length {_potential_len}, truncating")
             channel_history.popleft()
-            _prompt = await self._build_prompt(message.channel.id)
+            _prompt = await self._build_prompt(message.channel.id, message.id)
             _prompt_len = self._count_tokens_str(_prompt)
             _potential_len = _prompt_len + self.MAX_TOKENS_RESPONSE
 
@@ -209,10 +208,20 @@ Consider checking out these links to find someone to talk to:
         return len(encoding.encode(text))
 
 
-    async def _build_prompt(self, channel_id: int) -> str:
-        """Build prompt for a new request to the LLM,
-        for a given channel history"""
+    async def _build_prompt(self, channel_id: int, reply_id: Optional[int] = None) -> str:
+        """Build prompt for a new request to the LLM to generate a response
+        to a given channel history. And optionally a given message id to reply to.
+        
+        Args: 
+            channel_id: the channel id to build the prompt for
+            reply_id: the message id to reply to, if any
+        Returns:
+            str: the prompt to use for the AI request
+        """
         prompt = self.SYSTEM_MSG + self.INSTRUCTION
+        if reply_id:
+            prompt += f"{self.REPLY_INSTRUCTION} {reply_id}"
+        prompt += "\n"
         history = self.history.get(channel_id, deque())
         for message in history:
             prompt += self._format_msg(message)

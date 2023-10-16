@@ -71,7 +71,9 @@ class Controller:
             raise
 
         self.ai_request_semaphore = asyncio.Semaphore(self.MAX_CONCURRENT_AI_REQUESTS)
-        self.queues: Dict[int, asyncio.Queue[Tuple[Message, datetime]]] = {}
+        
+        self.history_queues: Dict[int, asyncio.Queue[Tuple[Message, datetime]]] = {}
+        #stores per-channel message history, keyed by channel id
 
 
     def run(self) -> None:
@@ -140,12 +142,12 @@ class Controller:
     async def enqueue_message(self, message: Message) -> None:
         """Add a message to the processing queue"""
         channel_id = message.channel.id
-        if channel_id not in self.queues:
-            self.queues[channel_id] = asyncio.Queue()
+        if channel_id not in self.history_queues:
+            self.history_queues[channel_id] = asyncio.Queue()
             self.bot.loop.create_task(
-                self._process_channel_messages(channel_id, self.queues[channel_id]))
+                self._process_channel_messages(channel_id, self.history_queues[channel_id]))
         enqueue_time = datetime.now()
-        await self.queues[channel_id].put((message, enqueue_time))
+        await self.history_queues[channel_id].put((message, enqueue_time))
 
 
     async def _process_single_message(self, message: Message, 
@@ -171,9 +173,13 @@ class Controller:
                     
                     await self.ai_model_provider.add_bot_message(sent_msg)
             
+            except Exception as e:
+                self.logger.exception("an exception was raised trying to process a message for response", e)
+                pass
+            
             finally:
                 channel_id = message.channel.id
-                self.queues[channel_id].task_done()
+                self.history_queues[channel_id].task_done()
 
 
     async def _process_channel_messages(self, channel_id: int, queue: asyncio.Queue) -> None:

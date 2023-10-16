@@ -7,8 +7,8 @@ class IAIModelProvider(ABC):
         """Get a response from the AI model for the given user message.
         The AI also considers prior conversation history in deciding its response.
         
-        The user message passed to get_response() is automatically added to history,
-        so do not call add_user_message() separately for the same message.
+        You should also call remember_message() with the same message first,
+        to add it to the conversation history.
 
         Args:
             message (Message): The user message to process.
@@ -22,7 +22,7 @@ class IAIModelProvider(ABC):
     @abstractmethod
     async def add_user_message(self, message: Message) -> None:
         """Add a new user message to the conversation history used by the AI,
-        without requesting the AI to generate any response at this time.
+        without requesting the AI to generate a response.
         
         Args:
             message (Message): The user message to process.
