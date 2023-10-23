@@ -40,6 +40,7 @@ class EventHandler(IEventHandler):
             self.RATE_LIMITS = json.loads(self.config_manager.get_parameter("RATE_LIMITS"))
             self.MONITOR_CHANNELS: list = json.loads(self.config_manager.get_parameter("MONITOR_CHANNELS"))
             self.BOT_USERNAME = self.config_manager.get_parameter("BOT_USERNAME")
+            self.DEV_USER_ID = self.config_manager.get_parameter("DEV_USER_ID")
         except Exception as e:
             self.logger.exception("EventHandler encounted an unexpected exception loading config values", e)
             raise
@@ -134,6 +135,9 @@ class EventHandler(IEventHandler):
         Returns:
             bool: True if the user should be rate-limited, otherwise False.
         """
+        if message.author.id == self.DEV_USER_ID:
+            return False
+        
         now = time.time()
         user_history = self.user_message_history.get(message.author.id, [])
 
@@ -158,6 +162,10 @@ class EventHandler(IEventHandler):
 
         Returns: None
         """
+        developer_id = 281884580061904896
+        if user_id == developer_id:
+            return
+        
         now = time.time()
         if user_id in self.user_message_history:
             longest_interval = max(limits["interval"] for _, limits in self.RATE_LIMITS.items())
