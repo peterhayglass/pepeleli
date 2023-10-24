@@ -14,6 +14,7 @@ from EventHandler import EventHandler
 from ConfigManager import ConfigManager
 from Logger import Logger
 from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
+from ai.IAIModelProvider import IAIModelProvider
 import ai.openai.OpenAIModelProviderFactory
 import ai.openai.OpenAIInstructModelProviderFactory
 import ai.vllm.VllmAIModelProviderFactory
@@ -25,16 +26,63 @@ class Controller:
 
 
     def __init__(self) -> None:
-
         self.logger = Logger()
         self.config_manager = ConfigManager(self.logger)
-        
-        self.AI_PROVIDER_TYPE = self.config_manager.get_parameter('AI_PROVIDER_TYPE') 
+
         try:
-            self.ai_model_provider = BaseAIModelProviderFactory.create(
+            self.MONITOR_CHANNELS: list = json.loads(
+                self.config_manager.get_parameter("MONITOR_CHANNELS"))
+            self.ANNOUNCE_CHANNELS: list = json.loads(
+                self.config_manager.get_parameter("ANNOUNCE_CHANNELS"))                
+            self.MAX_CONCURRENT_AI_REQUESTS = int(
+                self.config_manager.get_parameter("MAX_CONCURRENT_AI_REQUESTS"))
+            self.AI_PROVIDER_TYPE = self.config_manager.get_parameter('AI_PROVIDER_TYPE')
+            self.BOT_TOKEN = self.config_manager.get_parameter('BOT_TOKEN') 
+        except Exception as e:
+            self.logger.exception("Controller encounted an unexpected exception loading config", e)
+            raise
+
+        _intents = discord.Intents.default()
+        _intents.messages = True
+        _intents.message_content = True
+        _intents.members = True
+        self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
+
+        self.bot.add_listener(self.on_ready, 'on_ready')
+        self.bot.add_listener(self.on_close, 'on_close')
+        
+        self.DISCORD_MSG_MAX_LEN = 2000
+
+        self.ai_request_semaphore = asyncio.Semaphore(self.MAX_CONCURRENT_AI_REQUESTS)
+        
+        self.history_queues: Dict[int, asyncio.Queue[Tuple[Message, datetime]]] = {}
+        #stores per-channel message history, keyed by channel id  
+        
+
+    def run(self) -> None:
+        """Start the bot and connect to Discord API
+           Called by the entrypoint
+        """
+              
+        self.bot.run(self.BOT_TOKEN)
+    
+
+    async def on_ready(self) -> None:
+        """Runs once the websocket is connected to Discord
+        """
+        if platform.system() != 'Windows':
+            self.bot.loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
+            self.bot.loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
+        else: #on Windows, for local testing
+            atexit.register(self.win_handle_shutdown)
+
+        try:
+            self.ai_model_provider: IAIModelProvider = await BaseAIModelProviderFactory.create(
                 self.AI_PROVIDER_TYPE, 
                 self.config_manager, 
-                self.logger)
+                self.logger,
+                self.bot.loop
+            )
         except ValueError as ve:
             self.logger.exception("a ValueError was raised trying to start the AIModelProvider ", ve)
             sys.exit(1)
@@ -48,51 +96,8 @@ class Controller:
             self.config_manager, 
             self.logger)
 
-        _intents = discord.Intents.default()
-        _intents.messages = True
-        _intents.message_content = True
-        _intents.members = True
-          
-        self.bot = commands.Bot(command_prefix='?', intents=_intents, description=self.DESCRIPTION)
         self.bot.add_listener(self.event_handler.on_message, 'on_message')
-        self.bot.add_listener(self.on_ready, 'on_ready')
-        self.bot.add_listener(self.on_close, 'on_close')
-        
-        self.DISCORD_MSG_MAX_LEN = 2000
-        try:
-            self.MONITOR_CHANNELS: list = json.loads(
-                self.config_manager.get_parameter("MONITOR_CHANNELS"))
-            self.ANNOUNCE_CHANNELS: list = json.loads(
-                self.config_manager.get_parameter("ANNOUNCE_CHANNELS"))                
-            self.MAX_CONCURRENT_AI_REQUESTS = int(
-                self.config_manager.get_parameter("MAX_CONCURRENT_AI_REQUESTS"))
-        except Exception as e:
-            self.logger.exception("Controller encounted an unexpected exception loading channels config", e)
-            raise
 
-        self.ai_request_semaphore = asyncio.Semaphore(self.MAX_CONCURRENT_AI_REQUESTS)
-        
-        self.history_queues: Dict[int, asyncio.Queue[Tuple[Message, datetime]]] = {}
-        #stores per-channel message history, keyed by channel id
-
-
-    def run(self) -> None:
-        """Start the bot and connect to Discord API
-           Called by the entrypoint
-        """
-        bot_token = self.config_manager.get_parameter('BOT_TOKEN')
-        self.bot.run(bot_token)
-    
-
-    async def on_ready(self) -> None:
-        """Runs once the websocket is connected to Discord
-        """
-        if platform.system() != 'Windows':
-            self.bot.loop.add_signal_handler(signal.SIGINT, self.handle_shutdown)
-            self.bot.loop.add_signal_handler(signal.SIGTERM, self.handle_shutdown)
-        else: #on Windows, for local testing
-            atexit.register(self.win_handle_shutdown)
-        
         await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, 
                                        name=f"{await self.ai_model_provider.get_model_name()}"))        
 

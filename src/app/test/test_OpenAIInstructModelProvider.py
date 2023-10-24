@@ -78,8 +78,8 @@ def test_add_user_message_instruct(openai_instruct_model_provider: OpenAIInstruc
 
     async def run_test() -> None:
         await openai_instruct_model_provider.add_user_message(msg)
-        assert len(openai_instruct_model_provider.history[msg.channel.id]) == 1
-        assert openai_instruct_model_provider.history[msg.channel.id][0]["content"] == "User message"
+        hist = await openai_instruct_model_provider.history_manager.get_history(msg.channel.id)
+        assert hist[0].content == "User message"
     asyncio.run(run_test())
 
 
@@ -91,8 +91,8 @@ def test_history_append_user_instruct(openai_instruct_model_provider: OpenAIInst
 
     async def run_test() -> None:
         await openai_instruct_model_provider._history_append_user(msg)
-        assert len(openai_instruct_model_provider.history[msg.channel.id]) == 1
-        assert openai_instruct_model_provider.history[msg.channel.id][0]["content"] == "User message"
+        hist = await openai_instruct_model_provider.history_manager.get_history(msg.channel.id)
+        assert hist[0].content == "User message"
     asyncio.run(run_test())
 
 
@@ -104,8 +104,8 @@ def test_history_append_bot_instruct(openai_instruct_model_provider: OpenAIInstr
         msg.content = "Ai response"
         msg.channel.id = 1
         await openai_instruct_model_provider._history_append_bot(msg)
-        assert len(openai_instruct_model_provider.history[channel_id]) == 1
-        assert openai_instruct_model_provider.history[channel_id][0]["content"] == "Ai response"
+        hist = await openai_instruct_model_provider.history_manager.get_history(msg.channel.id)
+        assert hist[0].content == "Ai response"
     asyncio.run(run_test())
 
 
@@ -120,7 +120,7 @@ def test_check_history_len_instruct(openai_instruct_model_provider: OpenAIInstru
     async def run_test() -> None:
         message = "Long message"
         await openai_instruct_model_provider._history_append_bot(msg)
-        await openai_instruct_model_provider._check_history_len(msg.channel.id)
-        assert len(openai_instruct_model_provider.history[msg.channel.id]) == 1
+        hist = await openai_instruct_model_provider.history_manager.get_history(msg.channel.id)
+        assert len(hist) == 1
     
     asyncio.run(run_test())

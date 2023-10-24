@@ -1,6 +1,6 @@
 import json
 from collections import deque
-from typing import Optional
+from typing import Optional, List
 
 from discord import Message
 import openai
@@ -9,6 +9,8 @@ import tiktoken
 from IConfigManager import IConfigManager
 from ILogger import ILogger
 from ai.IAIModelProvider import IAIModelProvider
+from IHistoryManager import IHistoryManager, HistoryItem
+from HistoryManager import HistoryManager
 
 
 class OpenAIInstructModelProvider(IAIModelProvider):
@@ -53,10 +55,17 @@ Consider checking out these links to find someone to talk to:
         self.MAX_HISTORY_LEN = self.MAX_CONTEXT_LEN - (
             self._count_tokens_str(self.SYSTEM_MSG) 
             + self._count_tokens_str(self.INSTRUCTION)
+            + self._count_tokens_str(self.REPLY_INSTRUCTION)
             + self.MAX_TOKENS_RESPONSE
         )
+        self.history_manager: IHistoryManager = HistoryManager(
+            self._count_tokens_list,
+            self._format_msg,
+            self.MAX_HISTORY_LEN,
+            self.logger,
+            self.config_manager
+        )
 
-        self.history: dict[int, deque] = {} #per-channel message history, keyed by channel id
 
 
     async def get_response(self, message: Message) -> str:
@@ -84,24 +93,9 @@ Consider checking out these links to find someone to talk to:
                 await message.add_reaction(self.IGNORE_EMOJI)
             await message.channel.send(reason_msg, reference=message)
             return ""
-            
-        await self._check_history_len(message.channel.id)
-        channel_history = self.history.get(message.channel.id, deque())
-
+        
+        
         _prompt = await self._build_prompt(message.channel.id, message.id)
-        _prompt_len = self._count_tokens_str(_prompt)
-        _potential_len = _prompt_len + self.MAX_TOKENS_RESPONSE
-        while _prompt_len > self.MAX_CONTEXT_LEN:
-            self.logger.debug(f"detected excessive prompt length {_prompt_len} at prompt generation, "
-                              f"potential total length {_potential_len}, truncating")
-            channel_history.popleft()
-            _prompt = await self._build_prompt(message.channel.id, message.id)
-            _prompt_len = self._count_tokens_str(_prompt)
-            _potential_len = _prompt_len + self.MAX_TOKENS_RESPONSE
-
-        self.logger.debug(f"final prompt length for request is {_prompt_len}")
-        self.history[message.channel.id] = channel_history
-
         response = openai.Completion.create(
             model=self.RESPONSE_MODEL,
             prompt=_prompt,
@@ -139,61 +133,41 @@ Consider checking out these links to find someone to talk to:
             return
         
         await self._history_append_user(message)
-        await self._check_history_len(message.channel.id)
 
 
     async def add_bot_message(self, message: Message) -> None:
         await self._history_append_bot(message)
-        await self._check_history_len(message.channel.id)
 
 
     async def _history_append_user(self, message: Message) -> None:
         """Append a new user message to the conversation history
         """
-        new_item: dict = {}
-        new_item["content"] = message.content
-        new_item["name"] = message.author.display_name
-        new_item["id"] = message.id
-
-        self.history.setdefault(message.channel.id, deque()).append(new_item)
-        self.logger.debug("_history_append_user is adding: {} \n new history is now: {}", new_item, self.history)
+        new_item = HistoryItem(
+            timestamp = int(message.created_at.timestamp()),
+            content = message.content,
+            name = message.author.display_name,
+            id = message.id
+        )
+        await self.history_manager.add_history_item(message.channel.id, new_item)
+        self.logger.debug("_history_append_user is adding: {} \n new history is now: {}", 
+                            new_item, await self.history_manager.get_history(message.channel.id))
 
 
     async def _history_append_bot(self, message: Message) -> None:
         """Append a new AI/bot message to the conversation history
         """
-        new_item: dict = {}
-        new_item["content"] = message.content
-        new_item["name"] = self.BOT_USERNAME
-        new_item["id"] = message.id
-        
-        self.history.setdefault(message.channel.id, deque()).append(new_item)
-        self.logger.debug("_history_append_bot is adding: {} \n new history is now: {}", new_item, self.history)
-
-
-    async def _check_history_len(self, channel_id: int) -> None:
-        """Check if the history length has become too long for the context window,
-        truncate if necessary.  
-        """
-        channel_history = self.history.get(channel_id, deque())
-        history_len = await self._count_tokens_list(list(channel_history))
-        self.logger.debug(
-            f"_check_history_len found history length {history_len} for channel {channel_id}")
-        
-        while history_len > self.MAX_HISTORY_LEN and channel_history:
-            #TODO: archive history in a retrieveable manner
-            #for now: just truncate it.
-            removed = channel_history.popleft()
-            len_diff = await self._count_tokens_list([removed])
-            history_len -= len_diff
-            self.logger.debug(
-                f"_check_history_len truncated {len_diff} tokens "
-                f"for a new total length of {history_len}")
-        
-        self.history[channel_id] = channel_history
+        new_item = HistoryItem(
+            timestamp = int(message.created_at.timestamp()),
+            content = message.content,
+            name = self.BOT_USERNAME,
+            id = message.id
+        )
+        await self.history_manager.add_history_item(message.channel.id, new_item)
+        self.logger.debug("_history_append_bot is adding: {} \n new history is now: {}",
+                            new_item, await self.history_manager.get_history(message.channel.id))
     
         
-    async def _count_tokens_list(self, messages: list) -> int:
+    async def _count_tokens_list(self, messages: List[HistoryItem]) -> int:
         """Count the number of prompt tokens a given list of messages will require"""
         num_tokens = 0
         for message in messages:
@@ -222,18 +196,18 @@ Consider checking out these links to find someone to talk to:
         if reply_id:
             prompt += f"{self.REPLY_INSTRUCTION} {reply_id}"
         prompt += "\n"
-        history = self.history.get(channel_id, deque())
+        history = await self.history_manager.get_history(channel_id)
         for message in history:
             prompt += self._format_msg(message)
         prompt += f"<messageID=TBD> {self.BOT_USERNAME}:"
         return prompt
 
 
-    def _format_msg(self, message: dict, with_id: bool = True) -> str:
+    def _format_msg(self, message: HistoryItem, with_id: bool = True) -> str:
         if with_id:
-            return f"<messageID={message.get('id')}> {message.get('name')}: {message.get('content')}\n"
+            return f"<messageID={message.id}> {message.name}: {message.content}\n"
         else:
-            return f"{message.get('name')}: {message.get('content')}\n"
+            return f"{message.name}: {message.content}\n"
 
 
     async def _get_moderation(self, text: str, channel_id: int) -> Optional[list[str]]:
@@ -253,7 +227,7 @@ Consider checking out these links to find someone to talk to:
         if not self.MODERATION_THRESHOLD:
             return None
         
-        history = self.history.get(channel_id, deque())
+        history = await self.history_manager.get_history(channel_id)
         context = list(history)[-4:]
         
         messages = []

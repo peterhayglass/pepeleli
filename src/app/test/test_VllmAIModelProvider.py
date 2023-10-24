@@ -3,6 +3,7 @@ from pytest import MonkeyPatch
 from unittest.mock import AsyncMock, MagicMock
 import asyncio
 from typing import Any 
+from collections import deque
 
 from discord import Message
 
@@ -31,7 +32,8 @@ def config_manager_vllm() -> IConfigManager:
 
 @pytest.fixture
 def vllm_ai_model_provider(config_manager_vllm: IConfigManager, logger: ILogger) -> VllmAIModelProvider:
-    return VllmAIModelProvider(config_manager_vllm, logger)
+    vllm = VllmAIModelProvider(config_manager_vllm, logger)
+    return vllm
 
 
 @pytest.fixture
@@ -56,6 +58,7 @@ def test_get_response_vllm(
     monkeypatch.setattr(vllm_ai_model_provider.vllm, "get_token_usage", AsyncMock(return_value=50))
 
     async def run_test() -> None:
+        await vllm_ai_model_provider._init_async()
         response = await vllm_ai_model_provider.get_response(msg)
         assert response == "Ai response"
     asyncio.run(run_test())
@@ -71,35 +74,39 @@ def test_add_user_message_vllm(vllm_ai_model_provider: VllmAIModelProvider, monk
     monkeypatch.setattr(vllm_ai_model_provider.vllm, "get_token_usage", AsyncMock(return_value=50))
 
     async def run_test() -> None:
+        await vllm_ai_model_provider._init_async()
         await vllm_ai_model_provider.add_user_message(msg)
-        assert len(vllm_ai_model_provider.history[msg.channel.id]) == 1
-        assert vllm_ai_model_provider.history[msg.channel.id][0]["content"] == "User message"
-    asyncio.run(run_test())
+        hist = await vllm_ai_model_provider.history_manager.get_history(msg.channel.id)
+        assert hist[0].content == "User message"
+    asyncio.run(run_test())     
 
 
-def test_history_append_user_vllm(vllm_ai_model_provider: VllmAIModelProvider) -> None:
+def test_history_append_user_vllm(vllm_ai_model_provider: VllmAIModelProvider, monkeypatch: MonkeyPatch) -> None:
     msg = MagicMock(spec=Message)
     msg.content = "User message"
     msg.author.display_name = "Username"
     msg.channel.id = 1
 
+    monkeypatch.setattr(vllm_ai_model_provider.vllm, "get_token_usage", AsyncMock(return_value=50))
     async def run_test() -> None:
+        await vllm_ai_model_provider._init_async()
         await vllm_ai_model_provider._history_append_user(msg)
-        assert len(vllm_ai_model_provider.history[msg.channel.id]) == 1
-        assert vllm_ai_model_provider.history[msg.channel.id][0]["content"] == "User message"
+        hist = await vllm_ai_model_provider.history_manager.get_history(msg.channel.id)
+        assert hist[0].content == "User message"        
     asyncio.run(run_test())
 
 
-def test_history_append_bot_vllm(vllm_ai_model_provider: VllmAIModelProvider) -> None:
+def test_history_append_bot_vllm(vllm_ai_model_provider: VllmAIModelProvider, monkeypatch: MonkeyPatch) -> None:
     channel_id = 1
-
+    monkeypatch.setattr(vllm_ai_model_provider.vllm, "get_token_usage", AsyncMock(return_value=50))
     async def run_test() -> None:
         msg = MagicMock(spec=Message)
         msg.content = "Ai response"
         msg.channel.id = 1
+        await vllm_ai_model_provider._init_async()
         await vllm_ai_model_provider._history_append_bot(msg)
-        assert len(vllm_ai_model_provider.history[channel_id]) == 1
-        assert vllm_ai_model_provider.history[channel_id][0]["content"] == "Ai response"
+        hist = await vllm_ai_model_provider.history_manager.get_history(msg.channel.id)
+        assert hist[0].content == "Ai response"
     asyncio.run(run_test())
 
 
@@ -112,7 +119,8 @@ def test_check_history_len_vllm(vllm_ai_model_provider: VllmAIModelProvider, mon
     monkeypatch.setattr(vllm_ai_model_provider.vllm, "get_token_usage", AsyncMock(return_value=500))
 
     async def run_test() -> None:
+        await vllm_ai_model_provider._init_async()
         await vllm_ai_model_provider._history_append_bot(msg)
-        await vllm_ai_model_provider._check_history_len(msg.channel.id)
-        assert len(vllm_ai_model_provider.history[msg.channel.id]) == 1
+        hist = await vllm_ai_model_provider.history_manager.get_history(msg.channel.id)
+        assert len(hist) == 1
     asyncio.run(run_test())

@@ -1,3 +1,4 @@
+from asyncio import AbstractEventLoop
 from abc import ABC, abstractmethod
 from typing import Type
 from IConfigManager import IConfigManager
@@ -18,15 +19,19 @@ class BaseAIModelProviderFactory(ABC):
 
     @classmethod
     @abstractmethod
-    def create_provider(cls, config_manager: IConfigManager, logger: ILogger) -> IAIModelProvider:
+    async def create_provider(cls, 
+                        config_manager: IConfigManager, 
+                        logger: ILogger, 
+                        event_loop: AbstractEventLoop
+                        ) -> IAIModelProvider:
         """Create method to be implemented in subclass"""
         pass
 
 
     @classmethod
-    def create(cls, key: str, config_manager: IConfigManager, logger: ILogger) -> IAIModelProvider:
+    async def create(cls, key: str, config_manager: IConfigManager, logger: ILogger, event_loop: AbstractEventLoop) -> IAIModelProvider:
         """Method for creating an instance of AIModelProvider"""
         factory = cls._factories.get(key)
         if not factory:
             raise ValueError(f"No provider available for key: {key}")
-        return factory.create_provider(config_manager, logger)
+        return await factory.create_provider(config_manager, logger, event_loop)

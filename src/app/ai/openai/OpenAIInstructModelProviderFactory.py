@@ -1,4 +1,5 @@
-import imp
+from asyncio import AbstractEventLoop
+
 from IConfigManager import IConfigManager
 from ILogger import ILogger
 from ai.BaseAIModelProviderFactory import BaseAIModelProviderFactory
@@ -11,7 +12,11 @@ class OpenAIInstructModelProviderFactory(BaseAIModelProviderFactory):
     Factory for creating OpenAIInstructModelProvider
     """
     @classmethod
-    def create_provider(cls, config_manager: IConfigManager, logger: ILogger) -> IAIModelProvider:
+    async def create_provider(cls, 
+                        config_manager: IConfigManager, 
+                        logger: ILogger, 
+                        event_loop: AbstractEventLoop
+                        ) -> IAIModelProvider:
         return OpenAIInstructModelProvider(config_manager, logger)
 
 
