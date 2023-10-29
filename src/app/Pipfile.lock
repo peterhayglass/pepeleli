@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "dbc24a20896bf3636c0a656b61401c4278e70df6a7a553559e9b478306fbb6fc"
+            "sha256": "caa69989ebbc9411fb3ed18d1ef96cefe00e4d1ea6abfc0ab9e1779aee7be87b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -770,6 +770,74 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==4.66.1"
+        },
+        "types-aioboto3": {
+            "extras": [
+                "essential"
+            ],
+            "hashes": [
+                "sha256:1b0acade8bc71bc7a7bdad25012a6b10654f08951569acc37c43ef8677925d3c",
+                "sha256:855fd0ac81fdad10bf506fd327f031bee694be86db6b880c5aeccc5cd64f4060"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==12.0.0"
+        },
+        "types-aiobotocore": {
+            "hashes": [
+                "sha256:255b46dedeab919e67aedb4c96bcaa75c537e4349b94d7b731fbe5a8ba87269d",
+                "sha256:c31dde64bc9985c9c92214880f61035c95503a8b6046ebad37ca5817de44128a"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==2.7.0"
+        },
+        "types-aiobotocore-cloudformation": {
+            "hashes": [
+                "sha256:25963c2d7320e27f6aa4244553c83c86ddf2e4a04e0fa1152b8acf443bf079ea",
+                "sha256:f8a118794f11fbc93738eae7beca45dac8ee5ed45c474a19996f8acb37250db7"
+            ],
+            "version": "==2.7.0"
+        },
+        "types-aiobotocore-dynamodb": {
+            "hashes": [
+                "sha256:97281f09a88f80c0f3f3ee70607ed87231bf5416439412045ea754029950c401",
+                "sha256:dc30da1f1f3fe474baace824dcf819c27181c9c51d79a8f5c119814c117ec3b5"
+            ],
+            "version": "==2.7.0"
+        },
+        "types-aiobotocore-ec2": {
+            "hashes": [
+                "sha256:b5c2cb698c364fcf472607b5f8300a2f45727fb6bd837ab4c303fed0af511161",
+                "sha256:f25a4f14d2e647679c1a5404ab4fcd523dfd86a8cc91085aa0b4c97f13b8f3e7"
+            ],
+            "version": "==2.7.0"
+        },
+        "types-aiobotocore-lambda": {
+            "hashes": [
+                "sha256:4149bb6e671eb86dc37ee04c3fb532ce8af2e4f11bf361d220369f95c2c6faef",
+                "sha256:c82d30c96da11f5ed03f17b43e00542390b26558300894acbadacf8b4901e927"
+            ],
+            "version": "==2.7.0"
+        },
+        "types-aiobotocore-rds": {
+            "hashes": [
+                "sha256:5f53da128ac5e9dc2ac5d15de82d12c883d6b5adf4439cd9c22c2c978cefd994",
+                "sha256:61eced1d328a3eb4ad42f0f17f77acda3147d12a00d5486e7e8b3d49a35897cf"
+            ],
+            "version": "==2.7.0"
+        },
+        "types-aiobotocore-s3": {
+            "hashes": [
+                "sha256:5d384e6d176e6d637c2abeda43599d6d0895e18cf8f0a381bcb0c3cfaa1c7a75",
+                "sha256:8218a32d9f036c2fc9f893cf8eb05645947fbd3e1bd8f06f35be173fa763c15d"
+            ],
+            "version": "==2.7.0"
+        },
+        "types-aiobotocore-sqs": {
+            "hashes": [
+                "sha256:3f8c53a3cb3465348c34e07a3354607eb1fd7007a925448d31a31eb24899b3ed",
+                "sha256:e54dfbb4286f42800dca6f0b70214da09e3d38bfc9a855c8d23ece5b0e9fcaf4"
+            ],
+            "version": "==2.7.0"
         },
         "types-awscrt": {
             "hashes": [

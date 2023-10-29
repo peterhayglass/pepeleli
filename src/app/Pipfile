@@ -17,6 +17,7 @@ pytest-asyncio = "*"
 openai = "*"
 tiktoken = "*"
 aioboto3 = "*"
+types-aioboto3 = {extras = ["essential"], version = "*"}
 
 [dev-packages]
 numpy = "*"
