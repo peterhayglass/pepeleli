@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/app/**'
 
 jobs:
   typecheck-and-test:

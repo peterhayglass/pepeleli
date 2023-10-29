@@ -4,11 +4,12 @@
         {
             "Effect": "Allow",
             "Action": [
-                "logs:CreateLogGroup",
                 "logs:CreateLogStream",
-                "logs:PutLogEvents",
+                "kms:Decrypt",
+                "dynamodb:*",
                 "ssm:GetParameter",
-                "kms:Decrypt"
+                "logs:CreateLogGroup",
+                "logs:PutLogEvents"
             ],
             "Resource": "*"
         }
