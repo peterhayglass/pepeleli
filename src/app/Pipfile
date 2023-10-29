@@ -16,15 +16,13 @@ pytest = "*"
 pytest-asyncio = "*"
 openai = "*"
 tiktoken = "*"
-types-aioboto3 = {extras = ["essential"], version = "*"}
-pytest-stub = "*"
+aioboto3 = "*"
 
 [dev-packages]
 numpy = "*"
 fastapi = "*"
 pydantic = "*"
 uvicorn = "*"
-coverage = "*"
 
 [requires]
 python_version = "3.11"
