@@ -106,7 +106,7 @@ class Controller:
             if isinstance(channel, (TextChannel, Thread)):
                 await channel.send("`pepeleli is online and listening to everything " 
                     "in this channel, but I will only reply when tagged. "
-                    "I can't remember any conversations prior to this. "
+                    "I will try to remember what happened before this, but I can't see anything that happened while I was offline. "
                     f"[Provider type: {self.AI_PROVIDER_TYPE}]"
                     f"[Model: {await self.ai_model_provider.get_model_name()}]`")
             else:

@@ -2,6 +2,7 @@ from asyncio import AbstractEventLoop
 from collections import deque
 import json
 from typing import Optional, List
+from decimal import Decimal
 
 from discord import Message
 
@@ -105,10 +106,11 @@ class VllmAIModelProvider(IAIModelProvider):
     async def _history_append_user(self, message: Message) -> None:
         """Append a new user message to the conversation history"""
         new_item = HistoryItem(
-            timestamp = int(message.created_at.timestamp()),
+            timestamp = Decimal(message.created_at.timestamp()),
             content = message.content,
             name = message.author.display_name,
-            id = message.id
+            id = message.id,
+            channel_id = message.channel.id
         )
         await self.history_manager.add_history_item(message.channel.id, new_item)
         self.logger.debug("_history_append_user is adding: {} \n new history is now: {}", 
@@ -118,10 +120,11 @@ class VllmAIModelProvider(IAIModelProvider):
     async def _history_append_bot(self, message: Message) -> None:
         """Append a new AI/bot message to the conversation history"""
         new_item = HistoryItem(
-            int(message.created_at.timestamp()),
-            message.content,
-            self.BOT_USERNAME,
-            message.id
+            timestamp = Decimal(message.created_at.timestamp()),
+            content = message.content,
+            name = self.BOT_USERNAME,
+            id = message.id,
+            channel_id = message.channel.id
         )
         await self.history_manager.add_history_item(message.channel.id, new_item)
         self.logger.debug("_history_append_bot is adding: {} \n new history is now: {}",

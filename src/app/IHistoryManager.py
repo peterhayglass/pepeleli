@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from collections import deque
 from typing import Callable, Awaitable, List
 from attr import dataclass
+from decimal import Decimal
 
 from ILogger import ILogger
 from IConfigManager import IConfigManager
@@ -9,10 +10,11 @@ from IConfigManager import IConfigManager
 
 @dataclass
 class HistoryItem:
-    timestamp: int
+    timestamp: Decimal
     content: str
     name: str
     id: int
+    channel_id: int
 
 
 class IHistoryManager(ABC):
@@ -28,11 +30,11 @@ class IHistoryManager(ABC):
                 ) -> None:
         """
         Args:
-            count_tokens: reference to a method that counts tokens in a given list of history items.
+            count_tokens: reference to an async coroutine that counts tokens in a given list of history items.
                         happens outside the history manager so that a model-appropriate tokenizer can be used,
                         and model-appropriate prompt formatting can be used, e.g. EOS tokens.
 
-            format_msg: reference to a method that formats a given history item for inclusion in the prompt,
+            format_msg: reference to a function that formats a given history item for inclusion in the prompt,
                         i.e. including username, message id, etc
                         used in managing history length to stay within context length.
 

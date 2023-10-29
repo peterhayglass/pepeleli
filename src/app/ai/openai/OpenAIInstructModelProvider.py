@@ -1,6 +1,7 @@
 import json
 from collections import deque
 from typing import Optional, List
+from decimal import Decimal
 
 from discord import Message
 import openai
@@ -143,10 +144,11 @@ Consider checking out these links to find someone to talk to:
         """Append a new user message to the conversation history
         """
         new_item = HistoryItem(
-            timestamp = int(message.created_at.timestamp()),
+            timestamp = Decimal(message.created_at.timestamp()),
             content = message.content,
             name = message.author.display_name,
-            id = message.id
+            id = message.id,
+            channel_id = message.channel.id
         )
         await self.history_manager.add_history_item(message.channel.id, new_item)
         self.logger.debug("_history_append_user is adding: {} \n new history is now: {}", 
@@ -157,10 +159,11 @@ Consider checking out these links to find someone to talk to:
         """Append a new AI/bot message to the conversation history
         """
         new_item = HistoryItem(
-            timestamp = int(message.created_at.timestamp()),
+            timestamp = Decimal(message.created_at.timestamp()),
             content = message.content,
             name = self.BOT_USERNAME,
-            id = message.id
+            id = message.id,
+            channel_id = message.channel.id
         )
         await self.history_manager.add_history_item(message.channel.id, new_item)
         self.logger.debug("_history_append_bot is adding: {} \n new history is now: {}",
