@@ -64,6 +64,8 @@ def test_get_response_vllm(
     msg.author.display_name = "Username"
     msg.channel.id = 1
 
+    monkeypatch.setattr("ai.vllm.VllmAIModelProvider.HistoryManager._get_persisted_history", AsyncMock(return_value=deque()))
+
     async def run_test() -> None:
         await vllm_ai_model_provider._init_async()
         response = await vllm_ai_model_provider.get_response(msg)

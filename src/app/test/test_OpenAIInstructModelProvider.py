@@ -1,3 +1,4 @@
+from collections import deque
 import pytest
 from pytest import MonkeyPatch
 from unittest.mock import MagicMock, AsyncMock
@@ -53,6 +54,8 @@ def test_get_response_instruct(
     msg.content = "User message"
     msg.author.display_name = "Username"
     msg.channel.id = 1
+
+    monkeypatch.setattr("ai.openai.OpenAIInstructModelProvider.HistoryManager._get_persisted_history", AsyncMock(return_value=deque()))
 
     monkeypatch.setattr(
         "openai.Completion.create",
