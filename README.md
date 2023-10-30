@@ -16,7 +16,7 @@ Within this repository vLLM exists as a submodule at `/src/vllm`, which points t
 
 - The only supported user interface is Discord.  I plan to add support for other chat interfaces in the future, but this is not top priority.
 
-- Conversation history is truncated when it becomes too long for the context window size, and all conversation history is lost when the bot restarts.
+- Conversation history is truncated when it becomes too long for the context window size.
 
 - The bot only responds when tagged, but the context used in generating a response includes all recent messages in the channel (not just messages where the bot was tagged.)
 
