@@ -5,6 +5,7 @@ import asyncio
 from typing import Dict, Tuple
 from types import FrameType
 from datetime import datetime
+import time
 
 import discord
 from discord import Message, TextChannel, Thread 
@@ -55,8 +56,10 @@ class Controller:
 
         self.ai_request_semaphore = asyncio.Semaphore(self.MAX_CONCURRENT_AI_REQUESTS)
         
-        self.history_queues: Dict[int, asyncio.Queue[Tuple[Message, datetime]]] = {}
+        self.history_queues: Dict[int, asyncio.Queue[Tuple[Message, float]]] = {}
         #stores per-channel message history, keyed by channel id  
+        #each queue is the history for a given channel
+        #each tuple is (a message, a received perf_counter timestamp)
         
 
     def run(self) -> None:
@@ -151,12 +154,12 @@ class Controller:
             self.history_queues[channel_id] = asyncio.Queue()
             self.bot.loop.create_task(
                 self._process_channel_messages(channel_id, self.history_queues[channel_id]))
-        enqueue_time = datetime.now()
+        enqueue_time = time.perf_counter()
         await self.history_queues[channel_id].put((message, enqueue_time))
 
 
     async def _process_single_message(self, message: Message, 
-                                      enqueue_time: datetime
+                                      enqueue_time: float
                                       ) -> None:
         """helper function to process a single message and send a response
         called by process_messages() which handles consuming from queues"""
@@ -171,8 +174,8 @@ class Controller:
                 for response in chunked_response:
                     sent_msg = await message.channel.send(response, reference=message)
                     
-                    response_time = datetime.now()
-                    user_latency = (response_time - enqueue_time).total_seconds() * 1000  # in milliseconds
+                    response_time = time.perf_counter()
+                    user_latency = (response_time - enqueue_time) * 1000  # in milliseconds
                     self.logger.debug(
                         f"response time for {message.id} was {int(user_latency)} ms")
                     
@@ -194,15 +197,17 @@ class Controller:
             if not queue.empty():
                 message, enqueue_time = await queue.get()
                 
+                start_perf_counter = time.perf_counter()
                 start_time = datetime.now()
                 start_timestamp = start_time.strftime("%H:%M:%S.%f")[:-3]
                 self.logger.debug(f"starting processing for {message.id} at {start_timestamp}")
 
                 await self._process_single_message(message, enqueue_time)
 
+                end_perf_counter = time.perf_counter()
                 end_time = datetime.now()
                 end_timestamp = end_time.strftime("%H:%M:%S.%f")[:-3]
-                time_delta = (end_time - start_time).total_seconds() * 1000  # in milliseconds
+                time_delta = (end_perf_counter - start_perf_counter) * 1000  # in milliseconds
                 self.logger.debug(f"finished processing for {message.id} at {end_timestamp}, took {int(time_delta)} ms")
             else:
                 await asyncio.sleep(0.1)
