@@ -1,5 +1,4 @@
 import os
-from typing import List
 import json
 
 import boto3
@@ -15,9 +14,9 @@ class ConfigManager(IConfigManager):
     def __init__(self, logger: ILogger) -> None:
         self.logger = logger
         self.ssm_client = boto3.client('ssm', region_name=self.REGION)
-        self.PARAM_KEYS: List[str] = json.loads(
+        self.PARAM_KEYS: list[str] = json.loads(
             self.ssm_client.get_parameter(Name="PARAM_KEYS", WithDecryption=True)['Parameter']['Value'])
-        self.SECRETS_KEYS: List[str] = json.loads(
+        self.SECRETS_KEYS: list[str] = json.loads(
             self.ssm_client.get_parameter(Name="SECRETS_KEYS", WithDecryption=True)['Parameter']['Value'])
         self._load_parameters()
         self.logger.info("initialized configmanager")

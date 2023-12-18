@@ -1,6 +1,6 @@
 import json
 from collections import deque
-from typing import Optional, List
+from typing import Optional
 from decimal import Decimal
 
 from discord import Message
@@ -170,7 +170,7 @@ Consider checking out these links to find someone to talk to:
                             new_item, await self.history_manager.get_history(message.channel.id))
     
         
-    async def _count_tokens_list(self, messages: List[HistoryItem]) -> int:
+    async def _count_tokens_list(self, messages: list[HistoryItem]) -> int:
         """Count the number of prompt tokens a given list of messages will require"""
         num_tokens = 0
         for message in messages:

@@ -1,7 +1,7 @@
 from asyncio import AbstractEventLoop
 from collections import deque
 import json
-from typing import Optional, List
+from typing import Optional
 from decimal import Decimal
 
 from discord import Message
@@ -131,7 +131,7 @@ class VllmAIModelProvider(IAIModelProvider):
                             new_item, await self.history_manager.get_history(message.channel.id))
 
 
-    async def _count_tokens_list(self, messages: List[HistoryItem]) -> int:
+    async def _count_tokens_list(self, messages: list[HistoryItem]) -> int:
         """Count the number of prompt tokens a given list of messages will require"""
         formatted_msgs = []
         for message in messages:
