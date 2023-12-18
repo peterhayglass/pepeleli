@@ -20,7 +20,8 @@ def config_manager_history() -> IConfigManager:
     fake_params = {
         "AWS_ACCESS_KEY_ID": "fake_access_key",
         "AWS_SECRET_ACCESS_KEY": "fake_secret_key",
-        "AWS_DYNAMODB_TABLE_NAME": "pepeleli-chat-history"
+        "AWS_DYNAMODB_TABLE_NAME": "pepeleli-chat-history",
+        "PERSIST_HISTORY": "true"
     }
     config_manager_history.get_parameter.side_effect = lambda param_name: fake_params[param_name]
 

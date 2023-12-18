@@ -25,7 +25,8 @@ def config_manager_instruct() -> IConfigManager:
         "OPENAI_MAX_CONTEXT_LEN": "4096",
         "BOT_USERNAME": "BotUsername",
         "STOP_SEQUENCES": '["<messageID="]',
-        "OPENAI_MODERATION_THRESHOLD": "0"
+        "OPENAI_MODERATION_THRESHOLD": "0",
+        "PERSIST_HISTORY": "true"
     }
     config_manager_instruct.get_parameter.side_effect = lambda param_name: fake_params[param_name]
 

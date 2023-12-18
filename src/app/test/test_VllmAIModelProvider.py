@@ -26,7 +26,8 @@ def config_manager_vllm() -> IConfigManager:
         "VLLM_AI_PROVIDER_HOST": "localhost",
         "VLLM_AI_PROVIDER_PORT": "8888",
         "VLLM_API_KEY": "fake_vllm_api_key",
-        "STOP_SEQUENCES": '["<messageID="]'
+        "STOP_SEQUENCES": '["<messageID="]',
+        "PERSIST_HISTORY": "true"
     }
     config_manager_vllm.get_parameter.side_effect = lambda param_name: fake_params[param_name]
 
