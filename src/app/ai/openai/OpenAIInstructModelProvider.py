@@ -42,7 +42,7 @@ class OpenAIInstructModelProvider(IAIModelProvider):
 ### character info: {self.BOT_USERNAME} is an eccentric character, chill, friendly and laid back by default, but moody and opinionated and not shy about sharing opinions.  {self.BOT_USERNAME} can even get straight up unhinged if somebody says something that pushes his buttons, is fairly jaded and cynical in general but also has a sense of humour.  He is talking to his friends so he is honest, even a bit vulgar at times.  Despite the rough edges, {self.BOT_USERNAME} has a good heart.
 ### End system message\n"""
 
-        self.INSTRUCTION = f"### Instruction: continue the chat dialogue below by writing only a single reply in character as {self.BOT_USERNAME}. Do not write messages for other users. Do not write narration, system messages or anything other than dialogue from {self.BOT_USERNAME}"
+        self.INSTRUCTION = f"### Instruction: continue the chat dialogue below by writing only a single reply in character as {self.BOT_USERNAME}. Do not write messages for other users. Do not write narration, system messages or anything other than dialogue from {self.BOT_USERNAME}."
         self.REPLY_INSTRUCTION = f" Do not mention message ID numbers or specifically say you are replying, however do consider that {self.BOT_USERNAME} is replying to messageID:"
         self.MENTAL_HEALTH_MSG = """\nPlease don't harm yourself.
 Consider checking out these links to find someone to talk to:  

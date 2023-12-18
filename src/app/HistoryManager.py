@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Callable, Awaitable, List, Union
+from typing import Callable, Awaitable, Union
 
 import aioboto3
 from botocore.exceptions import ClientError
@@ -12,7 +12,7 @@ from IHistoryManager import IHistoryManager, HistoryItem
 
 class HistoryManager(IHistoryManager):
     def __init__(self, 
-                 count_tokens: Callable[[List[HistoryItem]], Awaitable[int]], 
+                 count_tokens: Callable[[list[HistoryItem]], Awaitable[int]], 
                  format_msg: Callable[[HistoryItem], str], 
                  max_history_len: int, 
                  logger: ILogger, 
@@ -40,7 +40,16 @@ class HistoryManager(IHistoryManager):
         self.max_history_len = max_history_len
         self.logger = logger
         self.config_manager = config_manager
-        self._session = aioboto3.Session(region_name='us-west-2')
+        
+        try:
+            self._persist = (True if self.config_manager.get_parameter("PERSIST_HISTORY") == "true" 
+                            else False)
+        except Exception as e:
+            self.logger.exception("HistoryManager encounted an unexpected exception loading config values", e)
+            raise
+        
+        if self._persist:
+            self._session = aioboto3.Session(region_name='us-west-2')
         
         self._local_history: dict[int, deque[HistoryItem]] = {} #in-memory message history, keyed by channel id
         
@@ -49,13 +58,17 @@ class HistoryManager(IHistoryManager):
         """Retrieve the history for a given channel ID,
         from in-memory cache if available, otherwise from dynamodb"""
         if channel_id not in self._local_history:
-            self._local_history[channel_id] = await self._get_persisted_history(channel_id)
+            if self._persist:
+                self._local_history[channel_id] = await self._get_persisted_history(channel_id)
+            else:
+                self._local_history[channel_id] = deque()
+
         return self._local_history[channel_id]
 
 
     async def _get_persisted_history(self, channel_id: int) -> deque[HistoryItem]:
         """Retrieve persisted history for a given channel ID from dynamodb"""
-        
+
         async with self._session.resource('dynamodb') as dynamodb:
             table = await dynamodb.Table('pepeleli-chat-history')
             response = await table.query(
@@ -74,7 +87,10 @@ class HistoryManager(IHistoryManager):
         channel_history = await self.get_history(channel_id)
         channel_history.append(item)
         self._local_history[channel_id] = channel_history
-        await self._persist_history_item(item)
+
+        if self._persist:
+            await self._persist_history_item(item)
+        
         await self._trim_history(channel_id)
 
 
@@ -109,7 +125,7 @@ class HistoryManager(IHistoryManager):
         self.logger.debug(
             f"_trim_history found history length {history_len} for channel {channel_id}")
         
-        all_removed: List[HistoryItem] = []
+        all_removed: list[HistoryItem] = []
         while history_len > self.max_history_len and channel_history:
             #TODO: archive history in a retrieveable manner
             #for now: just truncate it.
@@ -121,12 +137,12 @@ class HistoryManager(IHistoryManager):
                 f"_trim_history truncated {len_diff} tokens "
                 f"for a new total length of {history_len}")
             
-        if all_removed:
+        if all_removed and self._persist:
             await self._delete_persisted_items(all_removed)
         self._local_history[channel_id] = channel_history
 
 
-    async def _delete_persisted_items(self, items: Union[HistoryItem, List[HistoryItem]]) -> None:
+    async def _delete_persisted_items(self, items: Union[HistoryItem, list[HistoryItem]]) -> None:
         """Delete the given history item(s) from dynamodb.
         items must all have the same channel_id"""
         if not isinstance(items, list):

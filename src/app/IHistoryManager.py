@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Callable, Awaitable, List
+from typing import Callable, Awaitable
 from attr import dataclass
 from decimal import Decimal
 
@@ -22,7 +22,7 @@ class IHistoryManager(ABC):
     
     @abstractmethod
     def __init__(self, 
-                 count_tokens: Callable[[List[HistoryItem]], Awaitable[int]], 
+                 count_tokens: Callable[[list[HistoryItem]], Awaitable[int]], 
                  format_msg: Callable[[HistoryItem], str], 
                  max_history_len: int, 
                  logger: ILogger, 
