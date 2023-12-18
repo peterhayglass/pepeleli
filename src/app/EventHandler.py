@@ -8,13 +8,14 @@ from discord import Message
 from ILogger import ILogger
 from IEventHandler import IEventHandler
 from IConfigManager import IConfigManager
+from ai.IAIModelProvider import IAIModelProvider
 
 
 class EventHandler(IEventHandler):
     """Implementation of the Event Handler"""
     def __init__(self, 
                 respond_to_message: Callable[[Message], Awaitable[None]],
-                remember_message: Callable[[Message], Awaitable[None]],
+                ai_model_provider: IAIModelProvider,
                 config_manager: IConfigManager,
                 logger: ILogger
                 ) -> None:
@@ -24,14 +25,16 @@ class EventHandler(IEventHandler):
             respond_to_message (method reference): Will be called upon handling
             a new user message which requires a response from the bot
 
-            remember_message (method reference): Will be called upon handling
-            a new user message which does NOT require a response from the bot, 
-            but which should be added to the bot's memory/history.
+            ai_model_provider: IAIModelProvider reference, used to find
+            add_user_message() to remember a new user message which does not 
+            require a response from the bot.
+
+            config_manager: IConfigManager reference, to get config params
         
         Returns: None
         """
         self.respond_to_message = respond_to_message
-        self.remember_message = remember_message
+        self.remember_message = ai_model_provider.add_user_message
         self.logger = logger
         self.config_manager = config_manager
         self.user_message_history: dict = {}

@@ -95,7 +95,7 @@ class Controller:
         
         self.event_handler = EventHandler(
             self.enqueue_message, 
-            self.ai_model_provider.add_user_message,
+            self.ai_model_provider,
             self.config_manager, 
             self.logger)
 
