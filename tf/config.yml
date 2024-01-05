@@ -10,10 +10,10 @@ OPENAI_MODERATION_THRESHOLD: 0
 PERSIST_HISTORY: false
 STOP_SEQUENCES: >
   ["<messageID="]
-VLLM_AI_PROVIDER_HOST: a7tauhy4qai1qb-8000.proxy.runpod.net
+VLLM_AI_PROVIDER_HOST: nc1vc7xjib0jta-8000.proxy.runpod.net
 VLLM_AI_PROVIDER_PORT: 443
 VLLM_MAX_CONTEXT_LEN: 4090
-VLLM_RESPONSE_MODEL: TheBloke/Spicyboros-70B-2.2-AWQ
+VLLM_RESPONSE_MODEL: TheBloke/Nous-Hermes-Llama2-70B-AWQ
 RATE_LIMITS: >
   {
       "tier_1": {"messages": 8, "interval": 60},
